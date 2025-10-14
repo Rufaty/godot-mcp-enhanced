@@ -23,7 +23,7 @@ Transform your Godot development workflow with AI assistance that actually under
 - **🔍 Deep Context** - Full scene tree, scripts, errors, and project structure
 - **⚡ Live Updates** - Changes reflect instantly in your editor
 - **🎨 Multi-IDE Support** - Optimized for Windsurf AI, Kiro IDE, Cursor, and Claude
-- **🛠️ 51+ Tools** - Complete control over scenes, nodes, scripts, debugging, and file system
+- **🛠️ 62+ Tools** - Complete control over scenes, nodes, scripts, debugging, runtime operations, and file system
 - **🚀 Godot Process Management** - Auto-detect and launch Godot when needed
 - **📁 Direct File Access** - Work with project files even when Godot isn't running
 
@@ -79,6 +79,15 @@ Transform your Godot development workflow with AI assistance that actually under
 - **Direct File Access** - Read/write scenes and scripts without Godot running
 - **Project Settings** - Modify project.godot programmatically
 - **Directory Operations** - Create folders and manage project structure
+
+### 🎮 Runtime Operations (NEW!)
+- **Input Simulation** - Test keyboard, mouse, and actions automatically
+- **Asset Discovery** - AI can find and use all your project assets
+- **Plugin Detection** - Automatically detect and use installed plugins
+- **Runtime Debugging** - Inspect node properties during gameplay
+- **Performance Monitoring** - Real-time FPS, memory, and draw call stats
+- **Automated Testing** - Run test scripts and verify results
+- **Method Calling** - Call node methods for testing and debugging
 
 ---
 
@@ -412,6 +421,17 @@ Regularly check for issues:
 ```
 @godot check for errors and analyze performance
 ```
+
+---
+
+## 📚 Documentation
+
+- **[Runtime Features Guide](docs/RUNTIME_FEATURES.md)** - Complete guide to input simulation, asset management, and testing
+- **[CLI Setup Guide](docs/CLI_SETUP.md)** - Setup for Claude Code CLI, Gemini CLI, Aider, and more
+- **[Kiro IDE Setup](docs/Kiro_SETUP.md)** - Setup guide for Kiro IDE
+- **[Examples](docs/EXAMPLES.md)** - Real-world usage examples
+- **[AI Instructions](AI_INSTRUCTIONS.md)** - Comprehensive guide for AI assistants
+- **[Enhancements](ENHANCEMENTS.md)** - Detailed feature list and capabilities
 
 ---
 
