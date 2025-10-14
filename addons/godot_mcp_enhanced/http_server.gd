@@ -29,15 +29,23 @@ func debug_log(message: String) -> void:
 
 func _ready() -> void:
 	debug_log("_ready() called")
-	tcp_server = TCPServer.new()
-	debug_log("TCPServer created")
 	
-	# Create a timer for polling connections (more reliable in editor)
-	poll_timer = Timer.new()
-	poll_timer.wait_time = 0.01  # Poll every 10ms
-	poll_timer.timeout.connect(_poll_connections)
-	add_child(poll_timer)
-	debug_log("Poll timer created and added")
+	# Don't overwrite tcp_server if it already exists (might be listening!)
+	if tcp_server == null:
+		tcp_server = TCPServer.new()
+		debug_log("TCPServer created")
+	else:
+		debug_log("TCPServer already exists, not overwriting")
+	
+	# Don't overwrite poll_timer if it already exists (might be running!)
+	if poll_timer == null:
+		poll_timer = Timer.new()
+		poll_timer.wait_time = 0.01  # Poll every 10ms
+		poll_timer.timeout.connect(_poll_connections)
+		add_child(poll_timer)
+		debug_log("Poll timer created and added")
+	else:
+		debug_log("Poll timer already exists, not overwriting")
 	
 	# Create debug status timer
 	if DEBUG:
