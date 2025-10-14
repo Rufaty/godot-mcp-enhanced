@@ -38,7 +38,7 @@ uv --version
 ### 2. Install Godot Plugin
 
 1. **Download** the plugin:
-   - Go to [Releases](https://github.com/your-repo/releases)
+   - Go to [Releases](https://github.com/Rufaty/godot-mcp-enhanced/releases)
    - Download `godot-mcp-enhanced-v1.0.0.zip`
 
 2. **Extract** the archive
@@ -129,7 +129,7 @@ uv --version
 
 ### 2. Install Godot Plugin
 
-1. **Download** the plugin from [Releases](https://github.com/your-repo/releases)
+1. **Download** the plugin from [Releases](https://github.com/Rufaty/godot-mcp-enhanced/releases)
 
 2. **Extract** and copy to your project:
    ```bash
@@ -226,7 +226,7 @@ uv --version
 
 ```bash
 # Download and extract
-wget https://github.com/your-repo/releases/download/v1.0.0/godot-mcp-enhanced-v1.0.0.zip
+wget https://github.com/Rufaty/godot-mcp-enhanced/releases/download/v1.0.0/godot-mcp-enhanced-v1.0.0.zip
 unzip godot-mcp-enhanced-v1.0.0.zip
 
 # Copy to your project
@@ -437,9 +437,8 @@ If you encounter issues:
    - Verify all paths are correct
 
 3. **Get support**:
-   - [GitHub Issues](https://github.com/your-repo/issues)
-   - [Discord Community](https://discord.gg/your-server)
-   - [Discussions](https://github.com/your-repo/discussions)
+   - [GitHub Issues](https://github.com/Rufaty/godot-mcp-enhanced/issues)
+   - [Discussions](https://github.com/Rufaty/godot-mcp-enhanced/discussions)
 
 ---
 

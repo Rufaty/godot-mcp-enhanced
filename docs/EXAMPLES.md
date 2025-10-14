@@ -450,7 +450,7 @@ Then make informed changes based on your current project state.
 
 **More examples coming soon!**
 
-Share your workflows in [Discussions](https://github.com/your-repo/discussions)
+Share your workflows in [Discussions](https://github.com/Rufaty/godot-mcp-enhanced/discussions)
 
 [⬆ Back to Top](#usage-examples---godot-mcp-enhanced)
 

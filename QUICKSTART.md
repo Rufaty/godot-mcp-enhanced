@@ -26,7 +26,7 @@ uv --version
 
 ### Step 1: Install Godot Plugin (1 min)
 
-1. Download from [Releases](https://github.com/your-repo/releases)
+1. Download from [Releases](https://github.com/Rufaty/godot-mcp-enhanced/releases)
 2. Extract and copy `addons/godot_mcp_enhanced/` to your project
 3. In Godot: **Project → Settings → Plugins → Enable "Godot MCP Enhanced"**
 
@@ -206,8 +206,8 @@ Common workflows:
 ## 🆘 Need Help?
 
 - [Full Installation Guide](INSTALLATION.md)
-- [GitHub Issues](https://github.com/your-repo/issues)
-- [Community Discord](https://discord.gg/your-server)
+- [GitHub Issues](https://github.com/Rufaty/godot-mcp-enhanced/issues)
+- [Discussions](https://github.com/Rufaty/godot-mcp-enhanced/discussions)
 
 ---
 

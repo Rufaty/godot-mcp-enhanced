@@ -88,7 +88,7 @@ Transform your Godot development workflow with AI assistance that actually under
 
 ### Step 1: Install Godot Plugin
 
-1. **Download** the latest release from [Releases](https://github.com/your-repo/releases)
+1. **Download** the latest release from [Releases](https://github.com/Rufaty/godot-mcp-enhanced/releases)
 2. **Extract** and copy `addons/godot_mcp_enhanced/` to your project's `res://addons/` directory
 3. **Open** your project in Godot
 4. Go to **Project → Project Settings → Plugins**
@@ -433,10 +433,9 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/your-repo/godot-mcp-enhanced)
-- [Documentation](https://github.com/your-repo/godot-mcp-enhanced/docs)
-- [Issue Tracker](https://github.com/your-repo/godot-mcp-enhanced/issues)
-- [Discussions](https://github.com/your-repo/godot-mcp-enhanced/discussions)
+- [GitHub Repository](https://github.com/Rufaty/godot-mcp-enhanced)
+- [Issue Tracker](https://github.com/Rufaty/godot-mcp-enhanced/issues)
+- [Discussions](https://github.com/Rufaty/godot-mcp-enhanced/discussions)
 
 ---
 

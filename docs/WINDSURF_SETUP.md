@@ -486,8 +486,7 @@ Now that you're set up:
 - [Main Documentation](../README.md)
 - [Tool Reference](./TOOLS.md)
 - [Example Prompts](./EXAMPLES.md)
-- [Troubleshooting Guide](./TROUBLESHOOTING.md)
-- [GitHub Discussions](https://github.com/your-repo/discussions)
+- [GitHub Discussions](https://github.com/Rufaty/godot-mcp-enhanced/discussions)
 
 ---
 
@@ -495,9 +494,8 @@ Now that you're set up:
 
 Share your Windsurf + Godot workflows:
 
-- [Discord Server](https://discord.gg/your-server)
-- [GitHub Discussions](https://github.com/your-repo/discussions)
-- [Twitter @your_handle](https://twitter.com/your_handle)
+- [GitHub Discussions](https://github.com/Rufaty/godot-mcp-enhanced/discussions)
+- [Issue Tracker](https://github.com/Rufaty/godot-mcp-enhanced/issues)
 
 ---
 
