@@ -6,6 +6,7 @@ var port: int = 3571
 var routes: Dictionary = {}
 var is_running: bool = false
 var poll_timer: Timer
+var pending_clients: Array[StreamPeerTCP] = []
 
 signal request_received(method: String, path: String, params: Dictionary)
 signal server_started(port: int)
@@ -70,29 +71,47 @@ func _poll_connections() -> void:
 	if not is_running:
 		return
 	
+	# Accept new connections
 	if tcp_server and tcp_server.is_connection_available():
 		var client = tcp_server.take_connection()
-		_handle_client(client)
+		pending_clients.append(client)
+		print("[HTTP Server] New connection accepted")
+	
+	# Process pending clients
+	var clients_to_remove = []
+	for i in range(pending_clients.size()):
+		var client = pending_clients[i]
+		if _try_handle_client(client):
+			clients_to_remove.append(i)
+	
+	# Remove processed clients (in reverse to maintain indices)
+	for i in range(clients_to_remove.size() - 1, -1, -1):
+		pending_clients.remove_at(clients_to_remove[i])
 
 
-func _handle_client(client: StreamPeerTCP) -> void:
-	# Wait for data (with timeout)
-	var max_wait = 100  # milliseconds
-	var wait_time = 0
+func _try_handle_client(client: StreamPeerTCP) -> bool:
+	# Poll the client
+	client.poll()
 	
-	while client.get_available_bytes() == 0 and wait_time < max_wait:
-		await get_tree().create_timer(0.01).timeout
-		wait_time += 10
-	
+	# Check if data is available
 	if client.get_available_bytes() == 0:
-		client.disconnect_from_host()
-		return
+		# Check if client is still connected
+		if client.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+			client.disconnect_from_host()
+			return true  # Remove this client
+		return false  # Keep waiting for data
 	
-	# Read HTTP request
+	# Data is available, process it
+	_handle_client_request(client)
+	return true  # Remove this client after handling
+
+
+func _handle_client_request(client: StreamPeerTCP) -> void:
+	# Read all available HTTP request data
 	var request_text = ""
-	while client.get_available_bytes() > 0:
-		request_text += client.get_string(client.get_available_bytes())
-		await get_tree().create_timer(0.001).timeout
+	var bytes_available = client.get_available_bytes()
+	if bytes_available > 0:
+		request_text = client.get_string(bytes_available)
 	
 	# Parse HTTP request
 	var parsed = _parse_http_request(request_text)
@@ -106,13 +125,21 @@ func _handle_client(client: StreamPeerTCP) -> void:
 	
 	emit_signal("request_received", method, path, params)
 	
-	# Handle request
+	# Handle request asynchronously
 	if routes.has(path):
 		var handler = routes[path]
-		var result = await handler.call(params) if handler.is_valid() else {"error": "Invalid handler"}
-		_send_response(client, 200, result)
+		if handler.is_valid():
+			# Call handler asynchronously and send response when done
+			_call_handler_async(client, handler, params)
+		else:
+			_send_response(client, 500, {"error": "Invalid handler"})
 	else:
 		_send_response(client, 404, {"error": "Route not found", "path": path})
+
+
+func _call_handler_async(client: StreamPeerTCP, handler: Callable, params: Dictionary) -> void:
+	var result = await handler.call(params)
+	_send_response(client, 200, result)
 
 
 func _parse_http_request(request: String) -> Dictionary:
@@ -197,8 +224,8 @@ func _send_response(client: StreamPeerTCP, status_code: int, data: Variant) -> v
 	response += json_data
 	
 	client.put_data(response.to_utf8_buffer())
-	await get_tree().create_timer(0.1).timeout
-	client.disconnect_from_host()
+	# Disconnect after a short delay to ensure data is sent
+	get_tree().create_timer(0.1).timeout.connect(func(): client.disconnect_from_host())
 
 
 func _get_status_text(code: int) -> String:
