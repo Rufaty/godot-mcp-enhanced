@@ -441,3 +441,53 @@ func _get_file_dependencies(file_path: String) -> Array:
 			deps.append(dep_path)
 	
 	return deps
+
+
+func get_installed_plugins() -> Dictionary:
+	"""Get list of all installed plugins with their information"""
+	var plugins = []
+	var addons_path = "res://addons/"
+	
+	var dir = DirAccess.open(addons_path)
+	if not dir:
+		return {"success": false, "error": "Cannot access addons directory"}
+	
+	dir.list_dir_begin()
+	var plugin_dir = dir.get_next()
+	
+	while plugin_dir != "":
+		if dir.current_is_dir() and not plugin_dir.begins_with("."):
+			var plugin_cfg_path = addons_path.path_join(plugin_dir).path_join("plugin.cfg")
+			
+			if FileAccess.file_exists(plugin_cfg_path):
+				var plugin_info = _parse_plugin_cfg(plugin_cfg_path, plugin_dir)
+				if plugin_info:
+					plugins.append(plugin_info)
+		
+		plugin_dir = dir.get_next()
+	
+	dir.list_dir_end()
+	
+	return {"success": true, "data": {"plugins": plugins, "count": plugins.size()}}
+
+
+func _parse_plugin_cfg(cfg_path: String, plugin_dir: String) -> Dictionary:
+	"""Parse plugin.cfg file and extract information"""
+	var config = ConfigFile.new()
+	var err = config.load(cfg_path)
+	
+	if err != OK:
+		return {}
+	
+	var plugin_info = {
+		"directory": plugin_dir,
+		"path": "res://addons/" + plugin_dir,
+		"name": config.get_value("plugin", "name", plugin_dir),
+		"description": config.get_value("plugin", "description", ""),
+		"author": config.get_value("plugin", "author", ""),
+		"version": config.get_value("plugin", "version", ""),
+		"script": config.get_value("plugin", "script", ""),
+		"enabled": EditorInterface.get_singleton().is_plugin_enabled(plugin_dir) if EditorInterface.get_singleton() else false
+	}
+	
+	return plugin_info

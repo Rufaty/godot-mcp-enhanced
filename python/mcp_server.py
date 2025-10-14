@@ -721,6 +721,172 @@ async def list_tools() -> list[Tool]:
                 "required": ["dir_path"]
             }
         ),
+        
+        # Runtime Operations Tools
+        Tool(
+            name="simulate_key_press",
+            description="Simulate keyboard key press for testing gameplay",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "keycode": {
+                        "type": "integer",
+                        "description": "Key code to simulate (e.g., 32 for Space, 87 for W)"
+                    },
+                    "pressed": {
+                        "type": "boolean",
+                        "description": "Whether key is pressed (true) or released (false)",
+                        "default": True
+                    }
+                },
+                "required": ["keycode"]
+            }
+        ),
+        Tool(
+            name="simulate_action",
+            description="Simulate input action (like jump, move_left, etc.) for testing",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "action_name": {
+                        "type": "string",
+                        "description": "Name of the input action (e.g., 'ui_accept', 'jump', 'move_left')"
+                    },
+                    "pressed": {
+                        "type": "boolean",
+                        "description": "Whether action is pressed or released",
+                        "default": True
+                    },
+                    "strength": {
+                        "type": "number",
+                        "description": "Action strength (0.0 to 1.0)",
+                        "default": 1.0
+                    }
+                },
+                "required": ["action_name"]
+            }
+        ),
+        Tool(
+            name="get_runtime_stats",
+            description="Get real-time performance statistics (FPS, memory, draw calls, etc.)",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_node_properties",
+            description="Get all properties of a node at runtime for debugging",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node_path": {
+                        "type": "string",
+                        "description": "Path to the node (e.g., 'Player', 'Player/Sprite2D')"
+                    }
+                },
+                "required": ["node_path"]
+            }
+        ),
+        Tool(
+            name="call_node_method",
+            description="Call a method on a node for testing or debugging",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "node_path": {
+                        "type": "string",
+                        "description": "Path to the node"
+                    },
+                    "method_name": {
+                        "type": "string",
+                        "description": "Name of the method to call"
+                    },
+                    "args": {
+                        "type": "array",
+                        "description": "Arguments to pass to the method",
+                        "default": []
+                    }
+                },
+                "required": ["node_path", "method_name"]
+            }
+        ),
+        Tool(
+            name="get_installed_plugins",
+            description="Get list of all installed Godot plugins",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="get_plugin_info",
+            description="Get detailed information about a specific plugin",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "plugin_name": {
+                        "type": "string",
+                        "description": "Name of the plugin folder"
+                    }
+                },
+                "required": ["plugin_name"]
+            }
+        ),
+        Tool(
+            name="get_assets_by_type",
+            description="Get all assets of a specific type (texture, mesh, audio, script, etc.)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "asset_type": {
+                        "type": "string",
+                        "description": "Type of assets to find",
+                        "enum": ["texture", "image", "mesh", "model", "3d", "audio", "sound", "script", "scene", "material", "shader"]
+                    }
+                },
+                "required": ["asset_type"]
+            }
+        ),
+        Tool(
+            name="get_asset_info",
+            description="Get detailed information about a specific asset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "asset_path": {
+                        "type": "string",
+                        "description": "Path to the asset file"
+                    }
+                },
+                "required": ["asset_path"]
+            }
+        ),
+        Tool(
+            name="run_test_script",
+            description="Execute a test script and return results",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "script_path": {
+                        "type": "string",
+                        "description": "Path to the test script file"
+                    }
+                },
+                "required": ["script_path"]
+            }
+        ),
+        Tool(
+            name="get_input_actions",
+            description="Get all registered input actions and their key bindings",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
     ]
 
 
@@ -774,6 +940,19 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         # Windsurf tools
         "get_windsurf_context": "/api/windsurf/context",
         "get_live_preview": "/api/windsurf/live_preview",
+        
+        # Runtime operations
+        "simulate_key_press": "/api/runtime/simulate_key",
+        "simulate_action": "/api/runtime/simulate_action",
+        "get_runtime_stats": "/api/runtime/get_runtime_stats",
+        "get_node_properties": "/api/runtime/get_node_properties",
+        "call_node_method": "/api/runtime/call_node_method",
+        "get_installed_plugins": "/api/runtime/get_installed_plugins",
+        "get_plugin_info": "/api/runtime/get_plugin_info",
+        "get_assets_by_type": "/api/runtime/get_assets_by_type",
+        "get_asset_info": "/api/runtime/get_asset_info",
+        "run_test_script": "/api/runtime/run_test_script",
+        "get_input_actions": "/api/runtime/get_input_actions",
     }
     
     # Handle Godot process management tools (don't need Godot running)

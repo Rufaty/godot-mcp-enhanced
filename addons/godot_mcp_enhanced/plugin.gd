@@ -7,6 +7,7 @@ const SceneOperations = preload("res://addons/godot_mcp_enhanced/scene_operation
 const ScriptOperations = preload("res://addons/godot_mcp_enhanced/script_operations.gd")
 const DebuggerIntegration = preload("res://addons/godot_mcp_enhanced/debugger_integration.gd")
 const FileOperations = preload("res://addons/godot_mcp_enhanced/file_operations.gd")
+const RuntimeOperations = preload("res://addons/godot_mcp_enhanced/runtime_operations.gd")
 
 var http_server: Node
 var screenshot_manager: Node
@@ -14,6 +15,7 @@ var scene_operations: Node
 var script_operations: Node
 var debugger_integration: Node
 var file_operations: Node
+var runtime_operations: Node
 
 var bottom_panel: Control
 var config: Dictionary = {}
@@ -53,6 +55,11 @@ func _enter_tree() -> void:
 	file_operations = FileOperations.new()
 	file_operations.name = "MCPFileOperations"
 	add_child(file_operations)
+	
+	runtime_operations = RuntimeOperations.new()
+	runtime_operations.name = "MCPRuntimeOperations"
+	runtime_operations.editor_interface = get_editor_interface()
+	add_child(runtime_operations)
 	
 	# Connect HTTP server to operation handlers
 	_setup_http_routes()
@@ -96,7 +103,7 @@ func _exit_tree() -> void:
 	
 	# Clean up nodes
 	for child in [http_server, screenshot_manager, scene_operations, 
-				  script_operations, debugger_integration, file_operations]:
+				  script_operations, debugger_integration, file_operations, runtime_operations]:
 		if child:
 			child.queue_free()
 	
