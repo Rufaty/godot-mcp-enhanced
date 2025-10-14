@@ -551,6 +551,176 @@ async def list_tools() -> list[Tool]:
                 "required": []
             }
         ),
+        
+        # Godot Process Management Tools
+        Tool(
+            name="check_godot_running",
+            description="Check if Godot editor is currently running and responsive",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="launch_godot",
+            description="Launch Godot editor with the current project. Requires GODOT_EXECUTABLE environment variable to be set.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {
+                        "type": "string",
+                        "description": "Path to the Godot project directory (containing project.godot)"
+                    },
+                    "editor_mode": {
+                        "type": "boolean",
+                        "description": "Launch in editor mode (true) or run the project (false)",
+                        "default": True
+                    }
+                },
+                "required": ["project_path"]
+            }
+        ),
+        Tool(
+            name="get_godot_version",
+            description="Get the version of Godot that is configured or running",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        
+        # Direct File System Tools (work without Godot running)
+        Tool(
+            name="read_scene_file",
+            description="Read and parse a .tscn scene file directly from the file system",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "scene_path": {
+                        "type": "string",
+                        "description": "Path to the scene file (res:// or absolute path)"
+                    }
+                },
+                "required": ["scene_path"]
+            }
+        ),
+        Tool(
+            name="write_scene_file",
+            description="Write a .tscn scene file directly to the file system",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "scene_path": {
+                        "type": "string",
+                        "description": "Path where the scene file will be saved"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Complete .tscn file content"
+                    }
+                },
+                "required": ["scene_path", "content"]
+            }
+        ),
+        Tool(
+            name="read_script_file",
+            description="Read a .gd script file directly from the file system",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "script_path": {
+                        "type": "string",
+                        "description": "Path to the script file"
+                    }
+                },
+                "required": ["script_path"]
+            }
+        ),
+        Tool(
+            name="write_script_file",
+            description="Write a .gd script file directly to the file system",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "script_path": {
+                        "type": "string",
+                        "description": "Path where the script file will be saved"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Complete script content"
+                    }
+                },
+                "required": ["script_path", "content"]
+            }
+        ),
+        Tool(
+            name="read_project_settings",
+            description="Read project.godot settings file",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {
+                        "type": "string",
+                        "description": "Path to the project directory"
+                    }
+                },
+                "required": ["project_path"]
+            }
+        ),
+        Tool(
+            name="update_project_settings",
+            description="Update specific settings in project.godot file",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {
+                        "type": "string",
+                        "description": "Path to the project directory"
+                    },
+                    "settings": {
+                        "type": "object",
+                        "description": "Settings to update (e.g., {'application/config/name': 'My Game'})"
+                    }
+                },
+                "required": ["project_path", "settings"]
+            }
+        ),
+        Tool(
+            name="create_directory",
+            description="Create a directory in the project",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dir_path": {
+                        "type": "string",
+                        "description": "Path to the directory to create"
+                    }
+                },
+                "required": ["dir_path"]
+            }
+        ),
+        Tool(
+            name="list_directory",
+            description="List contents of a directory",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dir_path": {
+                        "type": "string",
+                        "description": "Path to the directory"
+                    },
+                    "recursive": {
+                        "type": "boolean",
+                        "description": "List recursively",
+                        "default": False
+                    }
+                },
+                "required": ["dir_path"]
+            }
+        ),
     ]
 
 
@@ -605,6 +775,339 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         "get_windsurf_context": "/api/windsurf/context",
         "get_live_preview": "/api/windsurf/live_preview",
     }
+    
+    # Handle Godot process management tools (don't need Godot running)
+    if name == "check_godot_running":
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                response = await client.get(f"{GODOT_BASE_URL}/project_info")
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "running": True,
+                        "responsive": response.status_code == 200
+                    }, indent=2)
+                )]
+        except:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "running": False,
+                    "responsive": False
+                }, indent=2)
+            )]
+    
+    if name == "launch_godot":
+        import subprocess
+        godot_exe = os.getenv("GODOT_EXECUTABLE")
+        if not godot_exe:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": False,
+                    "error": "GODOT_EXECUTABLE environment variable not set. Please set it to your Godot executable path."
+                }, indent=2)
+            )]
+        
+        project_path = arguments.get("project_path")
+        editor_mode = arguments.get("editor_mode", True)
+        
+        try:
+            args = [godot_exe]
+            if editor_mode:
+                args.extend(["--editor", "--path", project_path])
+            else:
+                args.extend(["--path", project_path])
+            
+            process = subprocess.Popen(args, 
+                                     stdout=subprocess.PIPE, 
+                                     stderr=subprocess.PIPE,
+                                     creationflags=subprocess.CREATE_NEW_CONSOLE if os.name == 'nt' else 0)
+            
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "message": f"Godot launched successfully with PID {process.pid}",
+                    "pid": process.pid,
+                    "note": "Wait a few seconds for Godot to start and the MCP server to become available"
+                }, indent=2)
+            )]
+        except Exception as e:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": False,
+                    "error": f"Failed to launch Godot: {str(e)}"
+                }, indent=2)
+            )]
+    
+    if name == "get_godot_version":
+        import subprocess
+        godot_exe = os.getenv("GODOT_EXECUTABLE")
+        if not godot_exe:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": False,
+                    "error": "GODOT_EXECUTABLE environment variable not set"
+                }, indent=2)
+            )]
+        
+        try:
+            result = subprocess.run([godot_exe, "--version"], 
+                                  capture_output=True, 
+                                  text=True, 
+                                  timeout=5)
+            version = result.stdout.strip()
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": True,
+                    "version": version,
+                    "executable": godot_exe
+                }, indent=2)
+            )]
+        except Exception as e:
+            return [TextContent(
+                type="text",
+                text=json.dumps({
+                    "success": False,
+                    "error": f"Failed to get Godot version: {str(e)}"
+                }, indent=2)
+            )]
+    
+    # Handle direct file system tools (work without Godot running)
+    if name in ["read_scene_file", "write_scene_file", "read_script_file", "write_script_file",
+                "read_project_settings", "update_project_settings", "create_directory", "list_directory"]:
+        
+        if name == "read_scene_file":
+            scene_path = arguments.get("scene_path", "")
+            if scene_path.startswith("res://"):
+                scene_path = scene_path.replace("res://", "./")
+            
+            try:
+                with open(scene_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "path": scene_path,
+                        "content": content
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to read scene file: {str(e)}"
+                    }, indent=2)
+                )]
+        
+        elif name == "write_scene_file":
+            scene_path = arguments.get("scene_path", "")
+            content = arguments.get("content", "")
+            
+            if scene_path.startswith("res://"):
+                scene_path = scene_path.replace("res://", "./")
+            
+            try:
+                os.makedirs(os.path.dirname(scene_path) if os.path.dirname(scene_path) else ".", exist_ok=True)
+                with open(scene_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "path": scene_path,
+                        "message": "Scene file written successfully"
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to write scene file: {str(e)}"
+                    }, indent=2)
+                )]
+        
+        elif name == "read_script_file":
+            script_path = arguments.get("script_path", "")
+            if script_path.startswith("res://"):
+                script_path = script_path.replace("res://", "./")
+            
+            try:
+                with open(script_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "path": script_path,
+                        "content": content
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to read script file: {str(e)}"
+                    }, indent=2)
+                )]
+        
+        elif name == "write_script_file":
+            script_path = arguments.get("script_path", "")
+            content = arguments.get("content", "")
+            
+            if script_path.startswith("res://"):
+                script_path = script_path.replace("res://", "./")
+            
+            try:
+                os.makedirs(os.path.dirname(script_path) if os.path.dirname(script_path) else ".", exist_ok=True)
+                with open(script_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "path": script_path,
+                        "message": "Script file written successfully"
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to write script file: {str(e)}"
+                    }, indent=2)
+                )]
+        
+        elif name == "read_project_settings":
+            project_path = arguments.get("project_path", ".")
+            settings_file = os.path.join(project_path, "project.godot")
+            
+            try:
+                with open(settings_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "path": settings_file,
+                        "content": content
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to read project settings: {str(e)}"
+                    }, indent=2)
+                )]
+        
+        elif name == "update_project_settings":
+            project_path = arguments.get("project_path", ".")
+            settings = arguments.get("settings", {})
+            settings_file = os.path.join(project_path, "project.godot")
+            
+            try:
+                with open(settings_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                for key, value in settings.items():
+                    found = False
+                    for i, line in enumerate(lines):
+                        if line.startswith(key):
+                            lines[i] = f'{key}="{value}"\n'
+                            found = True
+                            break
+                    if not found:
+                        lines.append(f'{key}="{value}"\n')
+                
+                with open(settings_file, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+                
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "message": "Project settings updated successfully"
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to update project settings: {str(e)}"
+                    }, indent=2)
+                )]
+        
+        elif name == "create_directory":
+            dir_path = arguments.get("dir_path", "")
+            if dir_path.startswith("res://"):
+                dir_path = dir_path.replace("res://", "./")
+            
+            try:
+                os.makedirs(dir_path, exist_ok=True)
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "path": dir_path,
+                        "message": "Directory created successfully"
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to create directory: {str(e)}"
+                    }, indent=2)
+                )]
+        
+        elif name == "list_directory":
+            dir_path = arguments.get("dir_path", ".")
+            recursive = arguments.get("recursive", False)
+            
+            if dir_path.startswith("res://"):
+                dir_path = dir_path.replace("res://", "./")
+            
+            try:
+                if recursive:
+                    files = []
+                    for root, dirs, filenames in os.walk(dir_path):
+                        for filename in filenames:
+                            files.append(os.path.join(root, filename))
+                else:
+                    files = [os.path.join(dir_path, f) for f in os.listdir(dir_path)]
+                
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": True,
+                        "path": dir_path,
+                        "files": files,
+                        "count": len(files)
+                    }, indent=2)
+                )]
+            except Exception as e:
+                return [TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "success": False,
+                        "error": f"Failed to list directory: {str(e)}"
+                    }, indent=2)
+                )]
     
     if name not in endpoint_map:
         return [TextContent(
