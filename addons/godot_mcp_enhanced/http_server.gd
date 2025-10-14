@@ -5,6 +5,7 @@ var tcp_server: TCPServer
 var port: int = 3571
 var routes: Dictionary = {}
 var is_running: bool = false
+var poll_timer: Timer
 
 signal request_received(method: String, path: String, params: Dictionary)
 signal server_started(port: int)
@@ -13,12 +14,25 @@ signal server_stopped()
 
 func _ready() -> void:
 	tcp_server = TCPServer.new()
+	
+	# Create a timer for polling connections (more reliable in editor)
+	poll_timer = Timer.new()
+	poll_timer.wait_time = 0.01  # Poll every 10ms
+	poll_timer.timeout.connect(_poll_connections)
+	add_child(poll_timer)
 
 
 func start_server(server_port: int) -> bool:
 	# Ensure tcp_server is initialized (in case _ready hasn't been called yet)
 	if tcp_server == null:
 		tcp_server = TCPServer.new()
+	
+	# Ensure poll_timer is initialized
+	if poll_timer == null:
+		poll_timer = Timer.new()
+		poll_timer.wait_time = 0.01
+		poll_timer.timeout.connect(_poll_connections)
+		add_child(poll_timer)
 	
 	port = server_port
 	var error = tcp_server.listen(port, "127.0.0.1")
@@ -28,18 +42,21 @@ func start_server(server_port: int) -> bool:
 		return false
 	
 	is_running = true
-	set_process(true)
+	poll_timer.start()
 	emit_signal("server_started", port)
 	print("[HTTP Server] Started on port %d" % port)
+	print("[HTTP Server] Polling for connections every 10ms")
 	return true
 
 
 func stop_server() -> void:
-	if tcp_server.is_listening():
+	if tcp_server and tcp_server.is_listening():
 		tcp_server.stop()
 	
+	if poll_timer:
+		poll_timer.stop()
+	
 	is_running = false
-	set_process(false)
 	emit_signal("server_stopped")
 	print("[HTTP Server] Stopped")
 
@@ -49,11 +66,11 @@ func register_route(route_path: String, handler: Callable) -> void:
 	print("[HTTP Server] Registered route: %s" % route_path)
 
 
-func _process(_delta: float) -> void:
+func _poll_connections() -> void:
 	if not is_running:
 		return
 	
-	if tcp_server.is_connection_available():
+	if tcp_server and tcp_server.is_connection_available():
 		var client = tcp_server.take_connection()
 		_handle_client(client)
 
