@@ -62,13 +62,24 @@ func _enter_tree() -> void:
 	
 	# Start HTTP server
 	var port = int(config.get("GDAI_MCP_SERVER_PORT", 3571))
-	http_server.start_server(port)
+	print("[Godot MCP Enhanced] Attempting to start HTTP server on port %d..." % port)
 	
-	# Update UI status
-	if bottom_panel:
-		bottom_panel.update_server_status(true)
+	var success = http_server.start_server(port)
 	
-	print("[Godot MCP Enhanced] Plugin initialized successfully on port %d" % port)
+	if success:
+		print("[Godot MCP Enhanced] ✓ HTTP Server started successfully on port %d" % port)
+		# Update UI status
+		if bottom_panel:
+			bottom_panel.update_server_status(true)
+	else:
+		push_error("[Godot MCP Enhanced] ✗ Failed to start HTTP server on port %d!" % port)
+		push_error("[Godot MCP Enhanced] Port may already be in use or blocked by firewall")
+		push_error("[Godot MCP Enhanced] Try changing GDAI_MCP_SERVER_PORT in godot_mcp_config.json")
+		# Update UI status
+		if bottom_panel:
+			bottom_panel.update_server_status(false)
+	
+	print("[Godot MCP Enhanced] Plugin initialization complete")
 
 
 func _exit_tree() -> void:
@@ -380,16 +391,31 @@ func _on_config_changed(new_config: Dictionary) -> void:
 
 
 func _on_server_restart_requested() -> void:
+	print("[Godot MCP Enhanced] ========================================")
 	print("[Godot MCP Enhanced] Restarting server...")
+	
+	# Stop server
 	http_server.stop_server()
 	if bottom_panel:
 		bottom_panel.update_server_status(false)
 	
+	print("[Godot MCP Enhanced] Server stopped, waiting 1 second...")
 	await get_tree().create_timer(1.0).timeout
 	
+	# Start server
 	var port = int(config.get("GDAI_MCP_SERVER_PORT", 3571))
-	http_server.start_server(port)
-	if bottom_panel:
-		bottom_panel.update_server_status(true)
+	print("[Godot MCP Enhanced] Starting server on port %d..." % port)
 	
-	print("[Godot MCP Enhanced] Server restarted successfully on port %d" % port)
+	var success = http_server.start_server(port)
+	
+	if success:
+		print("[Godot MCP Enhanced] ✓ Server restarted successfully on port %d" % port)
+		if bottom_panel:
+			bottom_panel.update_server_status(true)
+	else:
+		push_error("[Godot MCP Enhanced] ✗ Failed to restart server on port %d!" % port)
+		push_error("[Godot MCP Enhanced] Check if port is already in use")
+		if bottom_panel:
+			bottom_panel.update_server_status(false)
+	
+	print("[Godot MCP Enhanced] ========================================")

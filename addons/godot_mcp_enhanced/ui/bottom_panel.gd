@@ -107,11 +107,21 @@ func _on_restart_pressed() -> void:
 
 
 func _on_test_pressed() -> void:
+	print("[MCP Enhanced] ========================================")
 	print("[MCP Enhanced] Testing server connection...")
 	var port = current_config.get("GDAI_MCP_SERVER_PORT", "3571")
+	print("[MCP Enhanced] Port: " + str(port))
+	
 	var url = "http://127.0.0.1:" + str(port) + "/project_info"
 	print("[MCP Enhanced] Test URL: " + url)
-	print("[MCP Enhanced] Try accessing this URL in your browser or with curl")
+	print("[MCP Enhanced] ")
+	print("[MCP Enhanced] If browser shows 'Connection Refused':")
+	print("[MCP Enhanced]   1. Check Godot Output tab for errors")
+	print("[MCP Enhanced]   2. Click 'Restart Server' button")
+	print("[MCP Enhanced]   3. Check if port " + str(port) + " is already in use")
+	print("[MCP Enhanced]   4. Try disabling/re-enabling the plugin")
+	print("[MCP Enhanced] ========================================")
+	
 	OS.shell_open(url)
 
 
