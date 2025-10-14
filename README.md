@@ -22,8 +22,10 @@ Transform your Godot development workflow with AI assistance that actually under
 - **🖼️ Real-time Screenshots** - AI sees what you see in the editor and running game
 - **🔍 Deep Context** - Full scene tree, scripts, errors, and project structure
 - **⚡ Live Updates** - Changes reflect instantly in your editor
-- **🎨 Windsurf Optimized** - Special features designed for Windsurf AI's unique capabilities
-- **🛠️ 40+ Tools** - Complete control over scenes, nodes, scripts, and debugging
+- **🎨 Multi-IDE Support** - Optimized for Windsurf AI, Kiro IDE, Cursor, and Claude
+- **🛠️ 51+ Tools** - Complete control over scenes, nodes, scripts, debugging, and file system
+- **🚀 Godot Process Management** - Auto-detect and launch Godot when needed
+- **📁 Direct File Access** - Work with project files even when Godot isn't running
 
 ---
 
@@ -63,11 +65,20 @@ Transform your Godot development workflow with AI assistance that actually under
 - **Auto-Capture** - Automatic screenshots on scene changes and errors
 - **Base64 Encoding** - Instant AI vision integration
 
-### 🌊 Windsurf-Specific Features
+### 🌊 Advanced AI Features
 - **Live Context** - Comprehensive project state for AI understanding
 - **Smart Suggestions** - Context-aware code and scene recommendations
 - **Streaming Updates** - Real-time feedback on changes
 - **Visual Feedback** - Screenshots automatically included in responses
+- **AI Instructions** - Comprehensive guidance for AI assistants (see AI_INSTRUCTIONS.md)
+- **Autonomous Development** - AI can build complete games with minimal intervention
+
+### 🚀 Process & File Management
+- **Godot Detection** - Check if Godot is running and responsive
+- **Auto-Launch** - Launch Godot automatically when needed
+- **Direct File Access** - Read/write scenes and scripts without Godot running
+- **Project Settings** - Modify project.godot programmatically
+- **Directory Operations** - Create folders and manage project structure
 
 ---
 
@@ -113,9 +124,21 @@ The plugin automatically generates the configuration you need.
 
 ---
 
-## 🌊 Windsurf Setup
+## 🎨 IDE Setup
 
-Windsurf AI is optimized for this plugin with special features like live preview and context-aware suggestions.
+### Kiro IDE
+
+Kiro IDE has excellent AI capabilities and works great with Godot MCP Enhanced. See [Kiro Setup Guide](docs/KIRO_SETUP.md) for detailed instructions.
+
+**Quick Setup**:
+1. Create `.kiro/settings/mcp.json` in your project
+2. Add Godot MCP Enhanced configuration
+3. Set `GODOT_EXECUTABLE` environment variable
+4. Restart Kiro and start building!
+
+### Windsurf AI
+
+Windsurf AI is optimized for this plugin with special features like live preview and context-aware suggestions. See [Windsurf Setup Guide](docs/WINDSURF_SETUP.md).
 
 ### Configuration
 
