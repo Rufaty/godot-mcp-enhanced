@@ -1,6 +1,9 @@
 @tool
 extends Node
 
+# Debug mode - set to true for verbose logging
+const DEBUG = true
+
 var tcp_server: TCPServer
 var port: int = 3571
 var routes: Dictionary = {}
@@ -8,45 +11,77 @@ var is_running: bool = false
 var poll_timer: Timer
 var pending_clients: Array[StreamPeerTCP] = []
 
+# Debug counters
+var poll_count: int = 0
+var connection_count: int = 0
+var request_count: int = 0
+var debug_timer: Timer
+
 signal request_received(method: String, path: String, params: Dictionary)
 signal server_started(port: int)
 signal server_stopped()
 
 
+func debug_log(message: String) -> void:
+	if DEBUG:
+		print("[HTTP Server DEBUG] " + message)
+
+
 func _ready() -> void:
+	debug_log("_ready() called")
 	tcp_server = TCPServer.new()
+	debug_log("TCPServer created")
 	
 	# Create a timer for polling connections (more reliable in editor)
 	poll_timer = Timer.new()
 	poll_timer.wait_time = 0.01  # Poll every 10ms
 	poll_timer.timeout.connect(_poll_connections)
 	add_child(poll_timer)
+	debug_log("Poll timer created and added")
+	
+	# Create debug status timer
+	if DEBUG:
+		debug_timer = Timer.new()
+		debug_timer.wait_time = 5.0  # Status every 5 seconds
+		debug_timer.timeout.connect(_print_debug_status)
+		add_child(debug_timer)
+		debug_timer.start()
+		debug_log("Debug timer started")
 
 
 func start_server(server_port: int) -> bool:
+	debug_log("start_server() called with port: " + str(server_port))
+	
 	# Ensure tcp_server is initialized (in case _ready hasn't been called yet)
 	if tcp_server == null:
+		debug_log("tcp_server was null, creating new one")
 		tcp_server = TCPServer.new()
 	
 	# Ensure poll_timer is initialized
 	if poll_timer == null:
+		debug_log("poll_timer was null, creating new one")
 		poll_timer = Timer.new()
 		poll_timer.wait_time = 0.01
 		poll_timer.timeout.connect(_poll_connections)
 		add_child(poll_timer)
 	
 	port = server_port
+	debug_log("Attempting to listen on 127.0.0.1:" + str(port))
 	var error = tcp_server.listen(port, "127.0.0.1")
 	
 	if error != OK:
+		debug_log("FAILED to listen: " + error_string(error))
 		push_error("[HTTP Server] Failed to start server on port %d: %s" % [port, error_string(error)])
 		return false
 	
+	debug_log("Successfully listening on port " + str(port))
 	is_running = true
 	poll_timer.start()
+	debug_log("Poll timer started")
 	emit_signal("server_started", port)
 	print("[HTTP Server] Started on port %d" % port)
 	print("[HTTP Server] Polling for connections every 10ms")
+	debug_log("Server fully started and ready")
 	return true
 
 
@@ -68,16 +103,29 @@ func register_route(route_path: String, handler: Callable) -> void:
 
 
 func _poll_connections() -> void:
+	poll_count += 1
+	
 	if not is_running:
+		debug_log("Poll #" + str(poll_count) + " - Server not running, skipping")
 		return
+	
+	# Only log every 100 polls to avoid spam
+	if poll_count % 100 == 0:
+		debug_log("Poll #" + str(poll_count) + " - Checking for connections...")
 	
 	# Accept new connections
 	if tcp_server and tcp_server.is_connection_available():
+		connection_count += 1
+		debug_log("CONNECTION AVAILABLE! (#" + str(connection_count) + ")")
 		var client = tcp_server.take_connection()
+		debug_log("Client taken, status: " + str(client.get_status()))
 		pending_clients.append(client)
-		print("[HTTP Server] New connection accepted")
+		print("[HTTP Server] New connection accepted (#" + str(connection_count) + ")")
 	
 	# Process pending clients
+	if pending_clients.size() > 0:
+		debug_log("Processing " + str(pending_clients.size()) + " pending clients")
+	
 	var clients_to_remove = []
 	for i in range(pending_clients.size()):
 		var client = pending_clients[i]
@@ -89,20 +137,41 @@ func _poll_connections() -> void:
 		pending_clients.remove_at(clients_to_remove[i])
 
 
+func _print_debug_status() -> void:
+	debug_log("=== STATUS REPORT ===")
+	debug_log("Running: " + str(is_running))
+	debug_log("Poll count: " + str(poll_count))
+	debug_log("Connections accepted: " + str(connection_count))
+	debug_log("Requests processed: " + str(request_count))
+	debug_log("Pending clients: " + str(pending_clients.size()))
+	if tcp_server:
+		debug_log("TCP Server listening: " + str(tcp_server.is_listening()))
+	debug_log("====================")
+
+
 func _try_handle_client(client: StreamPeerTCP) -> bool:
 	# Poll the client
 	client.poll()
+	var status = client.get_status()
+	var bytes_available = client.get_available_bytes()
+	
+	debug_log("Client status: " + str(status) + ", bytes available: " + str(bytes_available))
 	
 	# Check if data is available
-	if client.get_available_bytes() == 0:
+	if bytes_available == 0:
 		# Check if client is still connected
-		if client.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+		if status != StreamPeerTCP.STATUS_CONNECTED:
+			debug_log("Client disconnected, removing")
 			client.disconnect_from_host()
 			return true  # Remove this client
+		debug_log("No data yet, keeping client in queue")
 		return false  # Keep waiting for data
 	
 	# Data is available, process it
+	debug_log("Data available! Processing request...")
+	request_count += 1
 	_handle_client_request(client)
+	debug_log("Request processed (#" + str(request_count) + ")")
 	return true  # Remove this client after handling
 
 
@@ -110,8 +179,12 @@ func _handle_client_request(client: StreamPeerTCP) -> void:
 	# Read all available HTTP request data
 	var request_text = ""
 	var bytes_available = client.get_available_bytes()
+	debug_log("Reading " + str(bytes_available) + " bytes from client")
+	
 	if bytes_available > 0:
 		request_text = client.get_string(bytes_available)
+		debug_log("Request text length: " + str(request_text.length()))
+		debug_log("First 100 chars: " + request_text.substr(0, 100))
 	
 	# Parse HTTP request
 	var parsed = _parse_http_request(request_text)
