@@ -1,0 +1,90 @@
+[gd_scene load_steps=2 format=3 uid="uid://bvqy8x7h1n3wj"]
+
+[ext_resource type="Script" path="res://addons/godot_mcp_enhanced/ui/bottom_panel.gd" id="1_bottom_panel"]
+
+[node name="BottomPanel" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bottom_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Godot MCP Enhanced - Model Context Protocol Server"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ServerStatus" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ServerStatus"]
+layout_mode = 2
+text = "Server Status:"
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer/ServerStatus"]
+layout_mode = 2
+text = "Stopped"
+
+[node name="StartStopButton" type="Button" parent="MarginContainer/VBoxContainer/ServerStatus"]
+layout_mode = 2
+text = "Start Server"
+
+[node name="ConfigSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ConfigLabel" type="Label" parent="MarginContainer/VBoxContainer/ConfigSection"]
+layout_mode = 2
+text = "Configuration"
+
+[node name="ConfigText" type="TextEdit" parent="MarginContainer/VBoxContainer/ConfigSection"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+text = "{
+	\"GDAI_MCP_SERVER_PORT\": \"3571\",
+	\"GDAI_RUNTIME_SERVER_PORT\": \"3572\",
+	\"AUTO_SCREENSHOT\": true
+}"
+editable = false
+
+[node name="ConfigButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ConfigSection"]
+layout_mode = 2
+
+[node name="CopyConfigButton" type="Button" parent="MarginContainer/VBoxContainer/ConfigSection/ConfigButtons"]
+layout_mode = 2
+text = "Copy Config"
+
+[node name="EditConfigButton" type="Button" parent="MarginContainer/VBoxContainer/ConfigSection/ConfigButtons"]
+layout_mode = 2
+text = "Edit Config File"
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="QuickLinks" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="DocsButton" type="Button" parent="MarginContainer/VBoxContainer/QuickLinks"]
+layout_mode = 2
+text = "Documentation"
+
+[node name="GitHubButton" type="Button" parent="MarginContainer/VBoxContainer/QuickLinks"]
+layout_mode = 2
+text = "GitHub"
+
+[node name="WindsurfGuideButton" type="Button" parent="MarginContainer/VBoxContainer/QuickLinks"]
+layout_mode = 2
+text = "Windsurf Setup Guide"

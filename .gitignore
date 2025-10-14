@@ -1,0 +1,52 @@
+# Godot files
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+*.translation
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+
+# Screenshots
+user://mcp_screenshots/
+
+# Config
+godot_mcp_config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# MCP
+.windsurf/
+.cursor/
