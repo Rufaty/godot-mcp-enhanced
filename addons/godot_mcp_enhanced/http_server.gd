@@ -16,6 +16,10 @@ func _ready() -> void:
 
 
 func start_server(server_port: int) -> bool:
+	# Ensure tcp_server is initialized (in case _ready hasn't been called yet)
+	if tcp_server == null:
+		tcp_server = TCPServer.new()
+	
 	port = server_port
 	var error = tcp_server.listen(port, "127.0.0.1")
 	
