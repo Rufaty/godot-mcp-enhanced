@@ -1,6 +1,30 @@
-# AI Instructions for Godot MCP Enhanced
+# AI Instructions for Godot MCP Enhanced v1.0
 
 This document provides comprehensive guidance for AI assistants using Godot MCP Enhanced to help developers build games.
+
+**Version**: 1.0.0  
+**Total Tools**: 62+  
+**Supported IDEs**: Kiro IDE, Claude Code CLI, Cursor, Windsurf, Aider, Continue
+
+---
+
+## 🚀 What's New in v1.0
+
+### Runtime Operations (11 New Tools)
+- **Input Simulation** - Test gameplay with simulated keyboard/mouse/actions
+- **Asset Discovery** - Find and use all project assets automatically
+- **Plugin Detection** - Detect and use installed Godot plugins
+- **Runtime Debugging** - Inspect nodes and properties during gameplay
+- **Performance Monitoring** - Real-time FPS, memory, draw call stats
+- **Automated Testing** - Run test scripts and verify results
+
+### Key Capabilities
+✅ Discover and use project assets (sprites, models, sounds)  
+✅ Detect and integrate installed plugins  
+✅ Simulate input for automated testing  
+✅ Monitor performance in real-time  
+✅ Debug runtime issues with live inspection  
+✅ Build complete games with minimal user intervention
 
 ---
 
@@ -572,3 +596,426 @@ See `docs/GAME_TEMPLATES.md` for full implementation guides.
 ---
 
 **Remember**: You're not just executing commands—you're helping create games. Think creatively, plan carefully, and build incrementally. The tools are powerful, but your reasoning and approach make the difference between a collection of nodes and a playable game.
+
+
+---
+
+## 🎮 Runtime Operations Guide
+
+### Asset Discovery & Management
+
+#### Finding Project Assets
+Use `get_assets_by_type` to discover assets in the project:
+
+```
+@godot get_assets_by_type asset_type="texture"
+@godot get_assets_by_type asset_type="3d"
+@godot get_assets_by_type asset_type="audio"
+```
+
+**Supported Asset Types**:
+- `texture` / `image` - PNG, JPG, SVG
+- `mesh` / `model` / `3d` - GLB, GLTF, OBJ, FBX
+- `audio` / `sound` - WAV, OGG, MP3
+- `script` - GD files
+- `scene` - TSCN files
+- `material` - TRES materials
+- `shader` - GDSHADER files
+
+#### Using Discovered Assets
+Once you find assets, use them in scenes:
+
+```
+# Find textures
+@godot get_assets_by_type asset_type="texture"
+# Returns: ["res://sprites/player.png", "res://sprites/enemy.png"]
+
+# Use in scene
+@godot add_node parent_path="Player" node_type="Sprite2D" node_name="Sprite"
+@godot update_property node_path="Player/Sprite" property="texture" value="res://sprites/player.png"
+```
+
+#### Asset Information
+Get detailed info about specific assets:
+
+```
+@godot get_asset_info asset_path="res://sprites/player.png"
+# Returns: {"type": "Texture2D", "size": [64, 64], "format": "PNG"}
+```
+
+### Plugin Detection & Integration
+
+#### Discovering Installed Plugins
+Check what plugins are available:
+
+```
+@godot get_installed_plugins
+# Returns: [{"name": "dialogue_manager", "enabled": true}, ...]
+```
+
+#### Using Plugin Features
+Get plugin details and use its nodes:
+
+```
+# Get plugin info
+@godot get_plugin_info plugin_name="dialogue_manager"
+# Returns: {"nodes": ["DialogueLabel", "DialogueManager"], ...}
+
+# Use plugin nodes
+@godot add_node parent_path="UI" node_type="DialogueLabel" node_name="Dialogue"
+```
+
+### Input Simulation & Testing
+
+#### Simulating Keyboard Input
+Test gameplay with keyboard simulation:
+
+```
+# Press spacebar
+@godot simulate_key_press keycode=32 pressed=true
+
+# Release W key
+@godot simulate_key_press keycode=87 pressed=false
+```
+
+**Common Keycodes**:
+- Space: 32
+- WASD: W=87, A=65, S=83, D=68
+- Arrows: Up=4194320, Down=4194322, Left=4194319, Right=4194321
+- Enter: 4194309, Escape: 4194305
+
+#### Simulating Input Actions
+Test with project-defined actions:
+
+```
+# Get available actions
+@godot get_input_actions
+# Returns: {"jump": [...], "move_left": [...], ...}
+
+# Trigger action
+@godot simulate_action action_name="jump" pressed=true strength=1.0
+```
+
+#### Testing Workflow
+Complete testing workflow:
+
+```
+# 1. Start the game
+@godot play_scene path="res://scenes/game.tscn"
+
+# 2. Simulate player input
+@godot simulate_action action_name="move_right" pressed=true
+# Wait a moment
+@godot simulate_action action_name="jump" pressed=true
+
+# 3. Check results
+@godot get_node_properties node_path="Player"
+@godot get_running_scene_screenshot
+
+# 4. Stop the game
+@godot stop_running_scene
+```
+
+### Runtime Debugging
+
+#### Inspecting Node Properties
+Check node state during gameplay:
+
+```
+# Get all properties of a node
+@godot get_node_properties node_path="Player"
+# Returns: {"position": [100, 200], "velocity": [50, 0], "health": 100}
+```
+
+#### Calling Node Methods
+Test methods directly:
+
+```
+# Call a method
+@godot call_node_method node_path="Player" method_name="jump" args=[]
+
+# Call with arguments
+@godot call_node_method node_path="Player" method_name="take_damage" args=[25]
+```
+
+### Performance Monitoring
+
+#### Getting Runtime Statistics
+Monitor game performance:
+
+```
+@godot get_runtime_stats
+```
+
+**Returns**:
+```json
+{
+  "fps": 60.0,
+  "memory_static": 45.2,
+  "memory_dynamic": 12.8,
+  "draw_calls": 156,
+  "vertices": 2048,
+  "material_changes": 12
+}
+```
+
+#### Performance Optimization Workflow
+```
+# 1. Measure baseline
+@godot play_scene
+@godot get_runtime_stats
+
+# 2. Identify issues
+# - Low FPS? Check draw calls and vertices
+# - High memory? Check for leaks
+# - Many material changes? Batch materials
+
+# 3. Apply fixes
+@godot stop_running_scene
+# Make optimizations...
+
+# 4. Verify improvements
+@godot play_scene
+@godot get_runtime_stats
+```
+
+### Automated Testing
+
+#### Running Test Scripts
+Execute automated tests:
+
+```
+@godot run_test_script script_path="res://tests/player_test.gd"
+# Returns: {"tests_passed": 5, "tests_failed": 0, "output": "..."}
+```
+
+---
+
+## 🎯 Advanced Workflows with Runtime Operations
+
+### Workflow: Asset-Based Game Creation
+
+**User Request**: "Create a game using my project assets"
+
+**Steps**:
+
+1. **Discover Assets**
+   ```
+   @godot get_assets_by_type asset_type="texture"
+   @godot get_assets_by_type asset_type="audio"
+   @godot get_assets_by_type asset_type="3d"
+   ```
+
+2. **Analyze Assets**
+   - Identify player sprites
+   - Find enemy sprites
+   - Locate sound effects
+   - Check for background music
+
+3. **Create Game Structure**
+   ```
+   @godot create_scene path="res://scenes/game.tscn" root_type="Node2D"
+   ```
+
+4. **Use Assets in Scene**
+   ```
+   # Add player with discovered sprite
+   @godot add_node node_type="CharacterBody2D" node_name="Player"
+   @godot add_node parent_path="Player" node_type="Sprite2D" node_name="Sprite"
+   @godot update_property node_path="Player/Sprite" property="texture" value="res://sprites/player.png"
+   
+   # Add audio with discovered sound
+   @godot add_node parent_path="Player" node_type="AudioStreamPlayer2D" node_name="JumpSound"
+   @godot update_property node_path="Player/JumpSound" property="stream" value="res://sounds/jump.wav"
+   ```
+
+5. **Test with Input Simulation**
+   ```
+   @godot play_scene
+   @godot simulate_action action_name="jump"
+   @godot get_running_scene_screenshot
+   ```
+
+### Workflow: Plugin-Enhanced Development
+
+**User Request**: "Use my installed plugins to create a dialogue system"
+
+**Steps**:
+
+1. **Detect Plugins**
+   ```
+   @godot get_installed_plugins
+   ```
+
+2. **Get Plugin Details**
+   ```
+   @godot get_plugin_info plugin_name="dialogue_manager"
+   # Returns available nodes and features
+   ```
+
+3. **Use Plugin Nodes**
+   ```
+   @godot create_scene path="res://scenes/dialogue.tscn" root_type="Control"
+   @godot add_node node_type="DialogueLabel" node_name="DialogueDisplay"
+   @godot add_node node_type="DialogueManager" node_name="Manager"
+   ```
+
+4. **Configure Plugin Features**
+   ```
+   @godot create_script path="res://scripts/dialogue_controller.gd"
+   @godot attach_script node_path="Manager" script_path="res://scripts/dialogue_controller.gd"
+   ```
+
+### Workflow: Automated Gameplay Testing
+
+**User Request**: "Test my platformer's movement and jumping"
+
+**Steps**:
+
+1. **Start Game**
+   ```
+   @godot play_scene path="res://scenes/game.tscn"
+   ```
+
+2. **Get Input Actions**
+   ```
+   @godot get_input_actions
+   # Identify: move_left, move_right, jump
+   ```
+
+3. **Test Movement**
+   ```
+   # Test right movement
+   @godot simulate_action action_name="move_right" pressed=true
+   @godot get_node_properties node_path="Player"
+   # Verify position changed
+   
+   @godot simulate_action action_name="move_right" pressed=false
+   ```
+
+4. **Test Jumping**
+   ```
+   @godot simulate_action action_name="jump" pressed=true
+   @godot get_node_properties node_path="Player"
+   # Verify velocity.y changed
+   ```
+
+5. **Visual Verification**
+   ```
+   @godot get_running_scene_screenshot
+   ```
+
+6. **Performance Check**
+   ```
+   @godot get_runtime_stats
+   # Verify FPS is stable
+   ```
+
+7. **Stop Game**
+   ```
+   @godot stop_running_scene
+   ```
+
+### Workflow: Performance Optimization
+
+**User Request**: "My game is laggy, help optimize it"
+
+**Steps**:
+
+1. **Measure Current Performance**
+   ```
+   @godot play_scene
+   @godot get_runtime_stats
+   # Note: FPS=25, draw_calls=500, memory=200MB
+   ```
+
+2. **Analyze Scene**
+   ```
+   @godot get_scene_tree
+   # Identify: Too many Sprite2D nodes, no batching
+   ```
+
+3. **Identify Issues**
+   - High draw calls → Need sprite batching
+   - Many individual sprites → Use TileMap
+   - Complex collision shapes → Simplify
+
+4. **Apply Optimizations**
+   ```
+   @godot stop_running_scene
+   # Convert sprites to TileMap
+   # Simplify collision shapes
+   # Enable texture atlasing
+   ```
+
+5. **Verify Improvements**
+   ```
+   @godot play_scene
+   @godot get_runtime_stats
+   # Note: FPS=60, draw_calls=50, memory=80MB ✓
+   ```
+
+---
+
+## 🎓 Best Practices for Runtime Operations
+
+### Asset Discovery
+- **Always check assets first** before creating placeholder content
+- **Use asset info** to understand dimensions and formats
+- **Organize assets** by type for easier discovery
+
+### Plugin Integration
+- **Check plugin availability** before using plugin nodes
+- **Read plugin documentation** via get_plugin_info
+- **Test plugin features** incrementally
+
+### Input Simulation
+- **Get input actions first** to know what's available
+- **Simulate realistic input** (press then release)
+- **Wait between inputs** for proper testing
+- **Verify results** with get_node_properties
+
+### Performance Monitoring
+- **Measure before optimizing** to establish baseline
+- **Focus on bottlenecks** (low FPS, high draw calls)
+- **Verify improvements** after changes
+- **Monitor continuously** during development
+
+### Automated Testing
+- **Test incrementally** (one feature at a time)
+- **Use visual verification** with screenshots
+- **Check performance impact** of new features
+- **Document test results** for user
+
+---
+
+## 📚 Quick Reference: Runtime Tools
+
+| Tool | Purpose | Example |
+|------|---------|---------|
+| `get_assets_by_type` | Find project assets | `asset_type="texture"` |
+| `get_asset_info` | Asset details | `asset_path="res://sprite.png"` |
+| `get_installed_plugins` | List plugins | No args |
+| `get_plugin_info` | Plugin details | `plugin_name="dialogue_manager"` |
+| `simulate_key_press` | Test keyboard | `keycode=32 pressed=true` |
+| `simulate_action` | Test actions | `action_name="jump"` |
+| `get_input_actions` | List actions | No args |
+| `get_node_properties` | Inspect node | `node_path="Player"` |
+| `call_node_method` | Test method | `node_path="Player" method_name="jump"` |
+| `get_runtime_stats` | Performance | No args |
+| `run_test_script` | Run tests | `script_path="res://tests/test.gd"` |
+
+---
+
+## 🎉 Summary
+
+With runtime operations, you can now:
+
+✅ **Discover and use project assets automatically**  
+✅ **Detect and integrate installed plugins**  
+✅ **Test gameplay with input simulation**  
+✅ **Debug runtime issues with live inspection**  
+✅ **Monitor and optimize performance**  
+✅ **Run automated tests**
+
+**Build complete, asset-rich games with AI assistance!** 🚀🎮🤖
