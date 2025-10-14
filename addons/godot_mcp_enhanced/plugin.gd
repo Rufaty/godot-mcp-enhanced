@@ -64,6 +64,10 @@ func _enter_tree() -> void:
 	var port = int(config.get("GDAI_MCP_SERVER_PORT", 3571))
 	http_server.start_server(port)
 	
+	# Update UI status
+	if bottom_panel:
+		bottom_panel.update_server_status(true)
+	
 	print("[Godot MCP Enhanced] Plugin initialized successfully on port %d" % port)
 
 
@@ -376,7 +380,16 @@ func _on_config_changed(new_config: Dictionary) -> void:
 
 
 func _on_server_restart_requested() -> void:
+	print("[Godot MCP Enhanced] Restarting server...")
 	http_server.stop_server()
+	if bottom_panel:
+		bottom_panel.update_server_status(false)
+	
 	await get_tree().create_timer(1.0).timeout
+	
 	var port = int(config.get("GDAI_MCP_SERVER_PORT", 3571))
 	http_server.start_server(port)
+	if bottom_panel:
+		bottom_panel.update_server_status(true)
+	
+	print("[Godot MCP Enhanced] Server restarted successfully on port %d" % port)
