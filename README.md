@@ -244,6 +244,7 @@ Create a conversation system with:
 
 ### Feature Guides
 - **[Runtime Features](docs/RUNTIME_FEATURES.md)** - Input simulation, asset discovery, testing
+- **[SVG Asset Guide](docs/SVG_GUIDE.md)** - Using SVG files for icons, logos, UI, and 2D games
 - **[Examples](docs/EXAMPLES.md)** - Real-world usage examples
 - **[AI Instructions](AI_INSTRUCTIONS.md)** - Comprehensive guide for AI assistants
 
