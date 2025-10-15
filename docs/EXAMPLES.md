@@ -455,3 +455,574 @@ Share your workflows in [Discussions](https://github.com/Rufaty/godot-mcp-enhanc
 [⬆ Back to Top](#usage-examples---godot-mcp-enhanced)
 
 </div>
+
+
+---
+
+## 🎮 Runtime Operations Examples (NEW!)
+
+### Example 16: Asset-Based Game Creation
+
+**Scenario**: You have assets in your project and want AI to use them automatically.
+
+```
+@godot I have these assets in my project:
+- res://sprites/knight.png
+- res://sprites/enemy_slime.png
+- res://models/sword.glb
+- res://sounds/sword_swing.wav
+- res://sounds/jump.wav
+
+Create a 3D action game using these assets with:
+1. A knight character using the sprite and sword model
+2. Slime enemies
+3. Sound effects for actions
+4. Test the gameplay with input simulation
+```
+
+**AI Actions**:
+```
+1. @godot get_assets_by_type asset_type="texture"
+   → Discovers knight.png, enemy_slime.png
+
+2. @godot get_assets_by_type asset_type="3d"
+   → Discovers sword.glb
+
+3. @godot get_assets_by_type asset_type="audio"
+   → Discovers sword_swing.wav, jump.wav
+
+4. @godot create_scene path="res://scenes/game.tscn" root_type="Node3D"
+
+5. Create Knight Character:
+   @godot add_node node_type="CharacterBody3D" node_name="Knight"
+   @godot add_node parent_path="Knight" node_type="Sprite3D" node_name="Sprite"
+   @godot update_property node_path="Knight/Sprite" property="texture" value="res://sprites/knight.png"
+   @godot add_node parent_path="Knight" node_type="MeshInstance3D" node_name="Sword"
+   @godot update_property node_path="Knight/Sword" property="mesh" value="res://models/sword.glb"
+
+6. Add Sound Effects:
+   @godot add_node parent_path="Knight" node_type="AudioStreamPlayer3D" node_name="SwingSound"
+   @godot update_property node_path="Knight/SwingSound" property="stream" value="res://sounds/sword_swing.wav"
+   @godot add_node parent_path="Knight" node_type="AudioStreamPlayer3D" node_name="JumpSound"
+   @godot update_property node_path="Knight/JumpSound" property="stream" value="res://sounds/jump.wav"
+
+7. Create Enemy:
+   @godot add_node node_type="CharacterBody3D" node_name="Slime"
+   @godot add_node parent_path="Slime" node_type="Sprite3D" node_name="Sprite"
+   @godot update_property node_path="Slime/Sprite" property="texture" value="res://sprites/enemy_slime.png"
+
+8. Test Gameplay:
+   @godot play_scene
+   @godot get_input_actions
+   @godot simulate_action action_name="jump" pressed=true
+   @godot get_running_scene_screenshot
+   @godot stop_running_scene
+```
+
+**Expected Result**: Complete 3D game using YOUR assets, not placeholders!
+
+---
+
+### Example 17: Plugin-Enhanced Development
+
+**Scenario**: You have the "Dialogue Manager" plugin installed.
+
+```
+@godot I have the Dialogue Manager plugin installed.
+Create a conversation system with:
+1. Dialogue UI with character portraits
+2. Multiple conversation branches
+3. Choice system
+4. Test the dialogue flow
+```
+
+**AI Actions**:
+```
+1. @godot get_installed_plugins
+   → Discovers: dialogue_manager (enabled)
+
+2. @godot get_plugin_info plugin_name="dialogue_manager"
+   → Returns: Available nodes: DialogueLabel, DialogueManager, DialogueResource
+
+3. @godot create_scene path="res://scenes/dialogue_ui.tscn" root_type="Control"
+
+4. Add Plugin Nodes:
+   @godot add_node node_type="DialogueLabel" node_name="DialogueDisplay"
+   @godot add_node node_type="DialogueManager" node_name="Manager"
+   @godot add_node node_type="TextureRect" node_name="Portrait"
+
+5. Create Dialogue Resource:
+   @godot create_script path="res://dialogues/intro.dialogue" content="
+   ~ start
+   Knight: Greetings, traveler!
+   - Hello! => friendly
+   - Who are you? => suspicious
+   
+   ~ friendly
+   Knight: Welcome to our village!
+   => END
+   
+   ~ suspicious
+   Knight: I am the village guardian.
+   => END
+   "
+
+6. Create Controller:
+   @godot create_script path="res://scripts/dialogue_controller.gd"
+   @godot attach_script node_path="Manager" script_path="res://scripts/dialogue_controller.gd"
+
+7. Test Dialogue:
+   @godot play_scene
+   @godot simulate_key_press keycode=4194309  # Enter key
+   @godot get_running_scene_screenshot
+```
+
+**Expected Result**: Complete dialogue system using YOUR plugin!
+
+---
+
+### Example 18: Automated Gameplay Testing
+
+**Scenario**: Test your platformer's movement and jumping mechanics.
+
+```
+@godot Test my platformer game:
+1. Test player movement (left, right)
+2. Test jumping mechanics
+3. Test collision detection
+4. Verify performance is stable
+5. Provide visual proof
+```
+
+**AI Actions**:
+```
+1. Start Game:
+   @godot play_scene path="res://scenes/game.tscn"
+   @godot get_running_scene_screenshot  # Initial state
+
+2. Get Available Actions:
+   @godot get_input_actions
+   → Returns: {move_left, move_right, jump, attack}
+
+3. Test Right Movement:
+   @godot get_node_properties node_path="Player"
+   → Initial position: [100, 200]
+   
+   @godot simulate_action action_name="move_right" pressed=true
+   # Wait 1 second
+   @godot get_node_properties node_path="Player"
+   → New position: [250, 200] ✓ Movement works!
+   
+   @godot simulate_action action_name="move_right" pressed=false
+
+4. Test Left Movement:
+   @godot simulate_action action_name="move_left" pressed=true
+   # Wait 1 second
+   @godot get_node_properties node_path="Player"
+   → Position decreased ✓
+   @godot simulate_action action_name="move_left" pressed=false
+
+5. Test Jumping:
+   @godot get_node_properties node_path="Player"
+   → velocity.y: 0
+   
+   @godot simulate_action action_name="jump" pressed=true
+   @godot get_node_properties node_path="Player"
+   → velocity.y: -400 ✓ Jump initiated!
+   
+   @godot get_running_scene_screenshot  # Player in air
+
+6. Test Collision:
+   @godot simulate_action action_name="move_right" pressed=true
+   # Move towards wall
+   @godot get_node_properties node_path="Player"
+   → Position stopped at wall ✓ Collision works!
+
+7. Check Performance:
+   @godot get_runtime_stats
+   → FPS: 60, Draw Calls: 45, Memory: 50MB ✓ Performance good!
+
+8. Final Screenshot:
+   @godot get_running_scene_screenshot
+   @godot stop_running_scene
+```
+
+**Expected Result**: Complete automated test with visual proof and performance metrics!
+
+---
+
+### Example 19: Performance Optimization
+
+**Scenario**: Your game is running slowly and needs optimization.
+
+```
+@godot My game is running at 25 FPS. Help me optimize it:
+1. Analyze current performance
+2. Identify bottlenecks
+3. Apply optimizations
+4. Verify improvements
+```
+
+**AI Actions**:
+```
+1. Measure Baseline:
+   @godot play_scene path="res://scenes/game.tscn"
+   @godot get_runtime_stats
+   → FPS: 25 (LOW!)
+   → Draw Calls: 500 (HIGH!)
+   → Memory: 200MB (HIGH!)
+   → Vertices: 50000 (HIGH!)
+
+2. Analyze Scene:
+   @godot stop_running_scene
+   @godot get_scene_tree
+   → Found: 200 individual Sprite2D nodes
+   → Found: No texture atlasing
+   → Found: Complex collision shapes
+
+3. Identify Issues:
+   - Too many draw calls from individual sprites
+   - No sprite batching
+   - Inefficient collision shapes
+   - Memory leaks in scripts
+
+4. Apply Optimizations:
+   
+   a) Convert sprites to TileMap:
+   @godot add_node node_type="TileMap" node_name="Ground"
+   # Configure tilemap with sprite atlas
+   
+   b) Simplify collision:
+   @godot update_property node_path="Player/Collision" property="shape" value="CapsuleShape2D"
+   
+   c) Fix script memory leaks:
+   @godot view_script path="res://scripts/enemy.gd"
+   # Identify: Not freeing resources in _exit_tree()
+   @godot edit_file path="res://scripts/enemy.gd" operation="insert" line=50 content="
+   func _exit_tree():
+       # Free resources
+       if texture:
+           texture = null
+   "
+   
+   d) Enable texture filtering:
+   @godot update_property node_path="Player/Sprite" property="texture_filter" value="1"
+
+5. Verify Improvements:
+   @godot play_scene
+   @godot get_runtime_stats
+   → FPS: 60 (GOOD! +140% improvement)
+   → Draw Calls: 50 (GOOD! -90% reduction)
+   → Memory: 80MB (GOOD! -60% reduction)
+   → Vertices: 5000 (GOOD! -90% reduction)
+   
+   @godot get_running_scene_screenshot
+   @godot stop_running_scene
+```
+
+**Expected Result**: Game optimized from 25 FPS to 60 FPS with visual proof!
+
+---
+
+### Example 20: Runtime Debugging
+
+**Scenario**: Player isn't jumping correctly, need to debug.
+
+```
+@godot My player isn't jumping correctly. Debug the issue:
+1. Inspect player state
+2. Test jump method
+3. Identify the bug
+4. Fix it
+5. Verify the fix works
+```
+
+**AI Actions**:
+```
+1. Start Game and Inspect:
+   @godot play_scene
+   @godot get_node_properties node_path="Player"
+   → position: [100, 200]
+   → velocity: [0, 0]
+   → is_on_floor: true
+   → gravity: 980
+
+2. Test Jump Action:
+   @godot simulate_action action_name="jump" pressed=true
+   @godot get_node_properties node_path="Player"
+   → velocity: [0, 0]  # BUG! Velocity didn't change!
+
+3. Test Jump Method Directly:
+   @godot call_node_method node_path="Player" method_name="jump" args=[]
+   @godot get_node_properties node_path="Player"
+   → velocity: [0, 0]  # Still not working!
+
+4. Analyze Script:
+   @godot stop_running_scene
+   @godot view_script path="res://scripts/player.gd"
+   
+   # Found the bug:
+   func jump():
+       if is_on_floor():
+           velocity.y = JUMP_VELOCITY  # This line exists
+   
+   # But JUMP_VELOCITY is defined as:
+   const JUMP_VELOCITY = 400  # BUG! Should be negative!
+
+5. Fix the Bug:
+   @godot edit_file path="res://scripts/player.gd" operation="replace" 
+   old_content="const JUMP_VELOCITY = 400"
+   new_content="const JUMP_VELOCITY = -400"
+
+6. Verify Fix:
+   @godot play_scene
+   @godot simulate_action action_name="jump" pressed=true
+   @godot get_node_properties node_path="Player"
+   → velocity: [0, -400]  # FIXED! Player is jumping!
+   
+   @godot get_running_scene_screenshot  # Player in air
+   @godot stop_running_scene
+```
+
+**Expected Result**: Bug identified and fixed with visual proof!
+
+---
+
+### Example 21: Multi-Asset Game Prototype
+
+**Scenario**: Rapid prototyping using all available assets.
+
+```
+@godot Create a complete game prototype using all my project assets:
+1. Discover all assets (sprites, models, sounds)
+2. Create a game scene using them
+3. Add gameplay mechanics
+4. Test everything
+5. Show me the result
+```
+
+**AI Actions**:
+```
+1. Asset Discovery:
+   @godot get_assets_by_type asset_type="texture"
+   → Found: player.png, enemy1.png, enemy2.png, coin.png, background.png
+   
+   @godot get_assets_by_type asset_type="audio"
+   → Found: jump.wav, coin.wav, hit.wav, music.ogg
+   
+   @godot get_assets_by_type asset_type="scene"
+   → Found: player.tscn, enemy.tscn
+
+2. Create Game Scene:
+   @godot create_scene path="res://scenes/level1.tscn" root_type="Node2D"
+   
+   # Add background
+   @godot add_node node_type="Sprite2D" node_name="Background"
+   @godot update_property node_path="Background" property="texture" value="res://sprites/background.png"
+   
+   # Add player (use existing scene)
+   @godot add_scene parent_path="." scene_path="res://scenes/player.tscn"
+   
+   # Add enemies
+   @godot add_scene parent_path="." scene_path="res://scenes/enemy.tscn" instance_name="Enemy1"
+   @godot update_property node_path="Enemy1" property="position" value="[300, 200]"
+   
+   @godot add_scene parent_path="." scene_path="res://scenes/enemy.tscn" instance_name="Enemy2"
+   @godot update_property node_path="Enemy2" property="position" value="[500, 200]"
+   
+   # Add collectibles
+   @godot add_node node_type="Sprite2D" node_name="Coin1"
+   @godot update_property node_path="Coin1" property="texture" value="res://sprites/coin.png"
+   @godot update_property node_path="Coin1" property="position" value="[200, 150]"
+   
+   # Add audio
+   @godot add_node node_type="AudioStreamPlayer" node_name="Music"
+   @godot update_property node_path="Music" property="stream" value="res://sounds/music.ogg"
+   @godot update_property node_path="Music" property="autoplay" value="true"
+
+3. Test Gameplay:
+   @godot play_scene
+   @godot get_input_actions
+   
+   # Test movement
+   @godot simulate_action action_name="move_right" pressed=true
+   @godot get_running_scene_screenshot
+   
+   # Test jumping
+   @godot simulate_action action_name="jump" pressed=true
+   @godot get_running_scene_screenshot
+   
+   # Check performance
+   @godot get_runtime_stats
+   → FPS: 60, Draw Calls: 25, Memory: 45MB ✓
+   
+   @godot stop_running_scene
+
+4. Final Screenshot:
+   @godot get_editor_screenshot
+```
+
+**Expected Result**: Complete game prototype using ALL your assets!
+
+---
+
+### Example 22: Plugin + Asset Integration
+
+**Scenario**: Combine plugin features with project assets.
+
+```
+@godot I have:
+- Dialogue Manager plugin installed
+- Character portraits in res://portraits/
+- Background music in res://music/
+
+Create a visual novel scene with:
+1. Dialogue system using the plugin
+2. Character portraits from my assets
+3. Background music
+4. Test the dialogue flow
+```
+
+**AI Actions**:
+```
+1. Discover Resources:
+   @godot get_installed_plugins
+   → Found: dialogue_manager
+   
+   @godot get_assets_by_type asset_type="texture"
+   → Found: portraits/knight.png, portraits/wizard.png
+   
+   @godot get_assets_by_type asset_type="audio"
+   → Found: music/menu_theme.ogg
+
+2. Create Scene:
+   @godot create_scene path="res://scenes/visual_novel.tscn" root_type="Control"
+   
+   # Add background
+   @godot add_node node_type="ColorRect" node_name="Background"
+   @godot set_anchor_preset node_path="Background" preset="full_rect"
+   @godot update_property node_path="Background" property="color" value="[0.1, 0.1, 0.2, 1.0]"
+   
+   # Add character portraits
+   @godot add_node node_type="TextureRect" node_name="LeftPortrait"
+   @godot update_property node_path="LeftPortrait" property="texture" value="res://portraits/knight.png"
+   @godot update_property node_path="LeftPortrait" property="position" value="[50, 100]"
+   
+   @godot add_node node_type="TextureRect" node_name="RightPortrait"
+   @godot update_property node_path="RightPortrait" property="texture" value="res://portraits/wizard.png"
+   @godot update_property node_path="RightPortrait" property="position" value="[600, 100]"
+   
+   # Add dialogue system (plugin nodes)
+   @godot add_node node_type="DialogueLabel" node_name="DialogueText"
+   @godot add_node node_type="DialogueManager" node_name="Manager"
+   
+   # Add music
+   @godot add_node node_type="AudioStreamPlayer" node_name="BGM"
+   @godot update_property node_path="BGM" property="stream" value="res://music/menu_theme.ogg"
+   @godot update_property node_path="BGM" property="autoplay" value="true"
+
+3. Create Dialogue:
+   @godot create_script path="res://dialogues/chapter1.dialogue" content="
+   ~ start
+   Knight: The ancient evil has awakened!
+   Wizard: We must gather the sacred artifacts.
+   - Let's go! => quest_start
+   - Tell me more. => more_info
+   
+   ~ quest_start
+   Knight: To the mountains!
+   => END
+   
+   ~ more_info
+   Wizard: The artifacts are scattered across the realm.
+   => quest_start
+   "
+
+4. Test Dialogue:
+   @godot play_scene
+   @godot get_running_scene_screenshot  # Initial state
+   
+   @godot simulate_key_press keycode=4194309  # Enter - advance dialogue
+   @godot get_running_scene_screenshot
+   
+   @godot simulate_key_press keycode=4194309  # Enter - advance again
+   @godot get_running_scene_screenshot
+   
+   @godot stop_running_scene
+```
+
+**Expected Result**: Visual novel scene combining plugin features with your assets!
+
+---
+
+## 💡 Tips for Runtime Operations
+
+### Asset Discovery
+- **Always check assets first** before creating placeholder content
+- Use `get_assets_by_type` to see what's available
+- Use `get_asset_info` to understand asset properties
+
+### Plugin Integration
+- Check `get_installed_plugins` to see what's available
+- Use `get_plugin_info` to understand plugin features
+- Test plugin nodes incrementally
+
+### Input Simulation
+- Get `get_input_actions` first to know what's available
+- Simulate realistic input (press then release)
+- Use `get_node_properties` to verify results
+- Always get screenshots for visual proof
+
+### Performance Testing
+- Measure baseline with `get_runtime_stats` first
+- Make one change at a time
+- Verify improvements after each change
+- Monitor continuously during development
+
+### Debugging
+- Start with `get_node_properties` to inspect state
+- Use `call_node_method` to test methods directly
+- Get screenshots to visualize issues
+- Check `get_runtime_stats` for performance impact
+
+---
+
+## 🎯 Pro Tips
+
+### Combine Multiple Features
+```
+@godot Create a complete game:
+1. Discover all my assets
+2. Detect installed plugins
+3. Build a game scene using both
+4. Test with input simulation
+5. Monitor performance
+6. Show me screenshots at each step
+```
+
+### Iterative Testing
+```
+@godot Test my game incrementally:
+1. Test movement → screenshot
+2. Test jumping → screenshot
+3. Test combat → screenshot
+4. Check performance after each test
+```
+
+### Asset-Driven Development
+```
+@godot Analyze my assets and suggest a game genre:
+1. List all textures
+2. List all sounds
+3. List all models
+4. Suggest what type of game I can make
+5. Create a prototype
+```
+
+---
+
+<div align="center">
+
+**With runtime operations, AI can now build complete, asset-rich games with minimal intervention!** 🚀🎮🤖
+
+</div>
