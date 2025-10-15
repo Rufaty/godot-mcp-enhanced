@@ -424,7 +424,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**Built with ❤️ for the Godot community**
+**Built with the help of Claude**
 
 [⬆ Back to Top](#godot-mcp-enhanced)
 
