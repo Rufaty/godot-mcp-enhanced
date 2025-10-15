@@ -98,7 +98,7 @@ Traditional AI coding assistants can write code, but they can't:
 
 Godot MCP Enhanced works with any MCP-compatible AI tool:
 
-- ✅ **Kiro IDE** (Optimized)
+- ✅ **Kiro IDE** 
 - ✅ **Claude Desktop**
 - ✅ **Claude Code CLI**
 - ✅ **Cursor**
@@ -379,7 +379,7 @@ For more help, see [Testing Guide](TESTING.md).
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome!
 
 ### Development Setup
 
