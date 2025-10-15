@@ -186,31 +186,6 @@ This release transforms Godot MCP Enhanced into a comprehensive AI-assisted game
 
 ---
 
-## Roadmap
-
-### v1.1.0 (Planned)
-- [ ] Visual scripting support
-- [ ] Animation timeline integration
-- [ ] Shader editing capabilities
-- [ ] Resource import automation
-- [ ] Multi-project support
-
-### v1.2.0 (Planned)
-- [ ] Collaborative editing features
-- [ ] Version control integration
-- [ ] Asset store integration
-- [ ] Template system
-- [ ] Project scaffolding
-
-### v2.0.0 (Future)
-- [ ] Godot 5.0 support
-- [ ] Advanced AI features
-- [ ] Cloud integration
-- [ ] Team collaboration tools
-- [ ] Enterprise features
-
----
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute to this project.
