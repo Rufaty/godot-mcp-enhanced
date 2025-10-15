@@ -643,6 +643,389 @@ Get detailed info about specific assets:
 # Returns: {"type": "Texture2D", "size": [64, 64], "format": "PNG"}
 ```
 
+---
+
+## 🎨 SVG Asset Usage Guide
+
+### Why Use SVG Files in Godot
+
+SVG (Scalable Vector Graphics) files are powerful assets for game development:
+
+**Advantages**:
+- ✅ **Resolution Independent** - Scale to any size without quality loss
+- ✅ **Small File Size** - Vector data is compact compared to raster images
+- ✅ **Perfect for UI** - Icons, buttons, logos stay crisp at any resolution
+- ✅ **Easy to Edit** - Modify colors, shapes, and styles programmatically
+- ✅ **Ideal for 2D Games** - Clean, scalable game elements
+- ✅ **Multi-Resolution Support** - One file works for all screen sizes
+
+**Best Use Cases**:
+- UI icons and buttons
+- Logos and branding
+- HUD elements
+- Menu graphics
+- Simple 2D game sprites
+- Geometric shapes
+- Symbols and indicators
+- Resolution-independent backgrounds
+
+### Discovering SVG Assets
+
+SVG files are discovered as textures:
+
+```
+@godot get_assets_by_type asset_type="texture"
+# Returns: ["res://icons/menu.svg", "res://ui/button.svg", "res://sprites/player.svg"]
+
+@godot get_assets_by_type asset_type="image"
+# Also finds SVG files along with PNG, JPG
+```
+
+### Using SVG for UI Icons
+
+#### Example 1: Menu Icons
+
+```
+# Discover SVG icons
+@godot get_assets_by_type asset_type="texture"
+# Found: res://icons/play.svg, res://icons/settings.svg, res://icons/quit.svg
+
+# Create menu with SVG icons
+@godot create_scene path="res://scenes/main_menu.tscn" root_type="Control"
+
+# Add button with SVG icon
+@godot add_node node_type="Button" node_name="PlayButton"
+@godot update_property node_path="PlayButton" property="text" value="Play"
+
+# Add TextureRect for icon
+@godot add_node parent_path="PlayButton" node_type="TextureRect" node_name="Icon"
+@godot update_property node_path="PlayButton/Icon" property="texture" value="res://icons/play.svg"
+@godot update_property node_path="PlayButton/Icon" property="expand_mode" value="1"  # Keep aspect
+@godot update_property node_path="PlayButton/Icon" property="custom_minimum_size" value="[32, 32]"
+```
+
+#### Example 2: HUD Icons
+
+```
+# Create HUD with SVG icons
+@godot create_scene path="res://scenes/hud.tscn" root_type="CanvasLayer"
+
+# Health icon
+@godot add_node node_type="TextureRect" node_name="HealthIcon"
+@godot update_property node_path="HealthIcon" property="texture" value="res://icons/heart.svg"
+@godot update_property node_path="HealthIcon" property="custom_minimum_size" value="[24, 24]"
+@godot update_property node_path="HealthIcon" property="position" value="[10, 10]"
+
+# Coin icon
+@godot add_node node_type="TextureRect" node_name="CoinIcon"
+@godot update_property node_path="CoinIcon" property="texture" value="res://icons/coin.svg"
+@godot update_property node_path="CoinIcon" property="custom_minimum_size" value="[24, 24]"
+@godot update_property node_path="CoinIcon" property="position" value="[10, 40]"
+```
+
+### Using SVG for Logos and Branding
+
+#### Example 3: Game Logo
+
+```
+# Add scalable logo to title screen
+@godot create_scene path="res://scenes/title_screen.tscn" root_type="Control"
+
+# Add logo (SVG scales perfectly)
+@godot add_node node_type="TextureRect" node_name="GameLogo"
+@godot update_property node_path="GameLogo" property="texture" value="res://branding/logo.svg"
+@godot update_property node_path="GameLogo" property="expand_mode" value="1"  # Keep aspect
+@godot update_property node_path="GameLogo" property="stretch_mode" value="5"  # Keep aspect centered
+@godot update_property node_path="GameLogo" property="custom_minimum_size" value="[400, 200]"
+@godot set_anchor_preset node_path="GameLogo" preset="center_top"
+```
+
+### Using SVG for 2D Game Sprites
+
+#### Example 4: Simple 2D Character
+
+```
+# Use SVG for clean, scalable character sprite
+@godot create_scene path="res://scenes/player.tscn" root_type="CharacterBody2D"
+
+# Add SVG sprite
+@godot add_node parent_path="." node_type="Sprite2D" node_name="Sprite"
+@godot update_property node_path="Sprite" property="texture" value="res://sprites/player.svg"
+@godot update_property node_path="Sprite" property="scale" value="[2.0, 2.0]"  # Scale up without quality loss
+
+# Add collision
+@godot add_node parent_path="." node_type="CollisionShape2D" node_name="Collision"
+@godot add_resource node_path="Collision" property="shape" resource_type="RectangleShape2D" resource_properties='{"size": [32, 64]}'
+```
+
+#### Example 5: Geometric Game Elements
+
+```
+# Use SVG for geometric shapes in puzzle game
+@godot create_scene path="res://scenes/puzzle_piece.tscn" root_type="Area2D"
+
+# Add SVG shape
+@godot add_node parent_path="." node_type="Sprite2D" node_name="Shape"
+@godot update_property node_path="Shape" property="texture" value="res://shapes/triangle.svg"
+
+# SVG shapes are perfect for:
+# - Puzzle pieces
+# - Geometric enemies
+# - Abstract game elements
+# - Pattern-based games
+```
+
+### Using SVG for UI Components
+
+#### Example 6: Button System with SVG
+
+```
+# Create reusable button with SVG background
+@godot create_scene path="res://scenes/ui/custom_button.tscn" root_type="Button"
+
+# Add SVG background
+@godot add_node parent_path="." node_type="TextureRect" node_name="Background"
+@godot update_property node_path="Background" property="texture" value="res://ui/button_bg.svg"
+@godot update_property node_path="Background" property="expand_mode" value="1"
+@godot set_anchor_preset node_path="Background" preset="full_rect"
+
+# Add SVG icon
+@godot add_node parent_path="." node_type="TextureRect" node_name="Icon"
+@godot update_property node_path="Icon" property="texture" value="res://icons/action.svg"
+@godot update_property node_path="Icon" property="custom_minimum_size" value="[24, 24]"
+```
+
+#### Example 7: Progress Bar with SVG
+
+```
+# Create progress bar with SVG elements
+@godot create_scene path="res://scenes/ui/progress_bar.tscn" root_type="Control"
+
+# Background (SVG)
+@godot add_node node_type="TextureRect" node_name="Background"
+@godot update_property node_path="Background" property="texture" value="res://ui/bar_bg.svg"
+@godot update_property node_path="Background" property="expand_mode" value="1"
+
+# Fill (SVG that can be clipped)
+@godot add_node node_type="TextureProgressBar" node_name="Fill"
+@godot update_property node_path="Fill" property="texture_progress" value="res://ui/bar_fill.svg"
+@godot update_property node_path="Fill" property="value" value="75"
+```
+
+### SVG Best Practices
+
+#### 1. **Sizing and Scaling**
+
+```
+# Always set custom_minimum_size for SVG textures
+@godot update_property node_path="Icon" property="custom_minimum_size" value="[32, 32]"
+
+# Use expand_mode to control scaling
+@godot update_property node_path="Icon" property="expand_mode" value="1"  # Keep aspect ratio
+
+# Scale SVG sprites without quality loss
+@godot update_property node_path="Sprite" property="scale" value="[3.0, 3.0]"  # Perfect quality!
+```
+
+#### 2. **Performance Considerations**
+
+```
+# SVG files are rasterized by Godot at import time
+# For best performance:
+# - Use SVG for UI elements (rendered once)
+# - Use SVG for static game elements
+# - Consider PNG for frequently animated sprites
+# - SVG is perfect for resolution-independent assets
+```
+
+#### 3. **Color Modification**
+
+```
+# Modify SVG colors with modulate
+@godot update_property node_path="Icon" property="modulate" value="[1.0, 0.5, 0.5, 1.0]"  # Tint red
+
+# Create color variants without multiple files
+@godot add_node node_type="TextureRect" node_name="RedIcon"
+@godot update_property node_path="RedIcon" property="texture" value="res://icons/star.svg"
+@godot update_property node_path="RedIcon" property="modulate" value="[1.0, 0.0, 0.0, 1.0]"
+
+@godot add_node node_type="TextureRect" node_name="BlueIcon"
+@godot update_property node_path="BlueIcon" property="texture" value="res://icons/star.svg"
+@godot update_property node_path="BlueIcon" property="modulate" value="[0.0, 0.0, 1.0, 1.0]"
+```
+
+#### 4. **Multi-Resolution Support**
+
+```
+# SVG automatically adapts to different screen sizes
+# Perfect for:
+# - Mobile games (various screen sizes)
+# - Desktop games (different resolutions)
+# - UI that needs to scale
+# - High-DPI displays
+
+# Example: Responsive UI
+@godot create_scene path="res://scenes/responsive_ui.tscn" root_type="Control"
+
+# Logo scales to screen size
+@godot add_node node_type="TextureRect" node_name="Logo"
+@godot update_property node_path="Logo" property="texture" value="res://branding/logo.svg"
+@godot set_anchor_preset node_path="Logo" preset="center"
+@godot update_property node_path="Logo" property="expand_mode" value="1"
+# Will look perfect on any screen size!
+```
+
+### Complete SVG Workflow Examples
+
+#### Workflow 1: Icon-Based Menu System
+
+```
+# 1. Discover SVG icons
+@godot get_assets_by_type asset_type="texture"
+# Found: play.svg, settings.svg, quit.svg, help.svg
+
+# 2. Create menu scene
+@godot create_scene path="res://scenes/icon_menu.tscn" root_type="Control"
+
+# 3. Add VBoxContainer for buttons
+@godot add_node node_type="VBoxContainer" node_name="ButtonContainer"
+@godot set_anchor_preset node_path="ButtonContainer" preset="center"
+@godot update_property node_path="ButtonContainer" property="custom_minimum_size" value="[200, 0]"
+
+# 4. Create buttons with SVG icons
+@godot add_node parent_path="ButtonContainer" node_type="HBoxContainer" node_name="PlayButton"
+@godot add_node parent_path="ButtonContainer/PlayButton" node_type="TextureRect" node_name="Icon"
+@godot update_property node_path="ButtonContainer/PlayButton/Icon" property="texture" value="res://icons/play.svg"
+@godot update_property node_path="ButtonContainer/PlayButton/Icon" property="custom_minimum_size" value="[32, 32]"
+@godot add_node parent_path="ButtonContainer/PlayButton" node_type="Label" node_name="Label"
+@godot update_property node_path="ButtonContainer/PlayButton/Label" property="text" value="Play Game"
+
+# Repeat for other buttons...
+# Result: Professional icon-based menu that scales perfectly!
+```
+
+#### Workflow 2: HUD with SVG Elements
+
+```
+# 1. Discover HUD assets
+@godot get_assets_by_type asset_type="texture"
+# Found: heart.svg, shield.svg, coin.svg, star.svg
+
+# 2. Create HUD
+@godot create_scene path="res://scenes/game_hud.tscn" root_type="CanvasLayer"
+
+# 3. Add health display
+@godot add_node node_type="HBoxContainer" node_name="HealthDisplay"
+@godot update_property node_path="HealthDisplay" property="position" value="[10, 10]"
+
+@godot add_node parent_path="HealthDisplay" node_type="TextureRect" node_name="HeartIcon"
+@godot update_property node_path="HealthDisplay/HeartIcon" property="texture" value="res://icons/heart.svg"
+@godot update_property node_path="HealthDisplay/HeartIcon" property="custom_minimum_size" value="[24, 24]"
+
+@godot add_node parent_path="HealthDisplay" node_type="Label" node_name="HealthValue"
+@godot update_property node_path="HealthDisplay/HealthValue" property="text" value="100"
+
+# 4. Add currency display
+@godot add_node node_type="HBoxContainer" node_name="CoinDisplay"
+@godot update_property node_path="CoinDisplay" property="position" value="[10, 40]"
+
+@godot add_node parent_path="CoinDisplay" node_type="TextureRect" node_name="CoinIcon"
+@godot update_property node_path="CoinDisplay/CoinIcon" property="texture" value="res://icons/coin.svg"
+@godot update_property node_path="CoinDisplay/CoinIcon" property="custom_minimum_size" value="[24, 24]"
+
+@godot add_node parent_path="CoinDisplay" node_type="Label" node_name="CoinValue"
+@godot update_property node_path="CoinDisplay/CoinValue" property="text" value="0"
+
+# Result: Clean, scalable HUD that looks great on any screen!
+```
+
+#### Workflow 3: 2D Game with SVG Sprites
+
+```
+# 1. Discover SVG game assets
+@godot get_assets_by_type asset_type="texture"
+# Found: player.svg, enemy.svg, platform.svg, collectible.svg
+
+# 2. Create player with SVG
+@godot create_scene path="res://scenes/player.tscn" root_type="CharacterBody2D"
+@godot add_node parent_path="." node_type="Sprite2D" node_name="Sprite"
+@godot update_property node_path="Sprite" property="texture" value="res://sprites/player.svg"
+@godot update_property node_path="Sprite" property="scale" value="[2.0, 2.0]"
+
+# 3. Create enemy with SVG
+@godot create_scene path="res://scenes/enemy.tscn" root_type="CharacterBody2D"
+@godot add_node parent_path="." node_type="Sprite2D" node_name="Sprite"
+@godot update_property node_path="Sprite" property="texture" value="res://sprites/enemy.svg"
+@godot update_property node_path="Sprite" property="scale" value="[1.5, 1.5]"
+
+# 4. Create level with SVG platforms
+@godot create_scene path="res://scenes/level1.tscn" root_type="Node2D"
+@godot add_node node_type="StaticBody2D" node_name="Platform1"
+@godot add_node parent_path="Platform1" node_type="Sprite2D" node_name="Sprite"
+@godot update_property node_path="Platform1/Sprite" property="texture" value="res://sprites/platform.svg"
+@godot update_property node_path="Platform1/Sprite" property="scale" value="[4.0, 1.0]"  # Stretch platform
+
+# Result: Clean, geometric 2D game with perfect scaling!
+```
+
+### SVG Asset Organization
+
+**Recommended Folder Structure**:
+```
+res://
+├── icons/          # UI icons (SVG)
+│   ├── menu.svg
+│   ├── settings.svg
+│   └── quit.svg
+├── ui/             # UI components (SVG)
+│   ├── button_bg.svg
+│   ├── panel_bg.svg
+│   └── bar_fill.svg
+├── branding/       # Logos and branding (SVG)
+│   ├── logo.svg
+│   └── splash.svg
+├── sprites/        # Game sprites (SVG for simple/geometric)
+│   ├── player.svg
+│   └── enemy.svg
+└── shapes/         # Geometric shapes (SVG)
+    ├── circle.svg
+    ├── triangle.svg
+    └── square.svg
+```
+
+### When to Use SVG vs PNG
+
+**Use SVG for**:
+- ✅ UI icons and buttons
+- ✅ Logos and text
+- ✅ HUD elements
+- ✅ Simple geometric sprites
+- ✅ Symbols and indicators
+- ✅ Resolution-independent graphics
+- ✅ Minimalist art styles
+
+**Use PNG for**:
+- ✅ Detailed pixel art
+- ✅ Complex textures
+- ✅ Photographic images
+- ✅ Heavily animated sprites
+- ✅ Particle effects
+- ✅ Detailed character art
+
+### SVG Quick Reference
+
+| Task | Command | Notes |
+|------|---------|-------|
+| Find SVG files | `get_assets_by_type asset_type="texture"` | SVG included in textures |
+| Add SVG to UI | `add_node node_type="TextureRect"` | Best for UI elements |
+| Add SVG to game | `add_node node_type="Sprite2D"` | For game sprites |
+| Set size | `update_property property="custom_minimum_size"` | Always set for SVG |
+| Keep aspect | `update_property property="expand_mode" value="1"` | Prevents distortion |
+| Scale up | `update_property property="scale" value="[2.0, 2.0]"` | No quality loss! |
+| Change color | `update_property property="modulate"` | Tint SVG colors |
+
+---
+
 ### Plugin Detection & Integration
 
 #### Discovering Installed Plugins
