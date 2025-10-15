@@ -243,18 +243,10 @@ Create a conversation system with:
 - **[Quick Start Guide](QUICKSTART.md)** - Step-by-step first project
 
 ### Feature Guides
-- **[Runtime Features](docs/RUNTIME_FEATURES.md)** - Input simulation, asset discovery, testing
-- **[SVG Asset Guide](docs/SVG_GUIDE.md)** - Using SVG files for icons, logos, UI, and 2D games
 - **[Examples](docs/EXAMPLES.md)** - Real-world usage examples
 - **[AI Instructions](AI_INSTRUCTIONS.md)** - Comprehensive guide for AI assistants
 
-### Setup Guides
-- **[Kiro IDE Setup](docs/KIRO_SETUP.md)** - Kiro-specific configuration
-- **[CLI Setup](docs/CLI_SETUP.md)** - Claude, Gemini, Aider, Continue
-- **[Windsurf Setup](docs/WINDSURF_SETUP.md)** - Windsurf-specific setup
-
 ### Reference
-- **[Enhancements](ENHANCEMENTS.md)** - Complete feature list
 - **[Changelog](CHANGELOG.md)** - Version history
 - **[Testing Guide](TESTING.md)** - Verification procedures
 
