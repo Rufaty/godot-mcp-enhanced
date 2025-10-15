@@ -1,33 +1,3 @@
-# AI Instructions for Godot MCP Enhanced v1.0
-
-This document provides comprehensive guidance for AI assistants using Godot MCP Enhanced to help developers build games.
-
-**Version**: 1.0.0  
-**Total Tools**: 62+  
-**Supported IDEs**: Kiro IDE, Claude Code CLI, Cursor, Windsurf, Aider, Continue
-
----
-
-## 🚀 What's New in v1.0
-
-### Runtime Operations (11 New Tools)
-- **Input Simulation** - Test gameplay with simulated keyboard/mouse/actions
-- **Asset Discovery** - Find and use all project assets automatically
-- **Plugin Detection** - Detect and use installed Godot plugins
-- **Runtime Debugging** - Inspect nodes and properties during gameplay
-- **Performance Monitoring** - Real-time FPS, memory, draw call stats
-- **Automated Testing** - Run test scripts and verify results
-
-### Key Capabilities
-✅ Discover and use project assets (sprites, models, sounds)  
-✅ Detect and integrate installed plugins  
-✅ Simulate input for automated testing  
-✅ Monitor performance in real-time  
-✅ Debug runtime issues with live inspection  
-✅ Build complete games with minimal user intervention
-
----
-
 ## 🎯 Core Principles
 
 ### 1. **Understand Before Acting**
