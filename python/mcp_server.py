@@ -1342,6 +1342,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         text=json.dumps(result, indent=2)
     )]
 
+def main_entry():
+    """Synchronous entry point for console script"""
+    asyncio.run(main())
+
 
 async def main():
     """Main entry point for the MCP server"""
@@ -1354,4 +1358,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main_entry()  # Changed this too
