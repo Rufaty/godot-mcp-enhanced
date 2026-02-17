@@ -164,6 +164,23 @@ uv pip install -e .
 }
 ```
 
+**For Claude Desktop** - In Claude Desktop, go to Setting > Developer > Edit Config which will open the directory the config file is in. Then open `claude_desktop_config.json` in your favorite text editor and add the following config.
+
+```json
+{
+    "mcpServers":{
+        "godot-mcp-enhanced": {
+            "command": "uv",
+            "args":["--directory", "D:/path/to/godot-mcp-enhanced/python", "run", "mcp-server"],
+            "env": {
+                "GODOT_HOST": "127.0.0.1",
+                "GDAI_MCP_SERVER_PORT": "3571"
+            }
+        }
+    }
+}
+```
+
 **For other tools**, see [CLI Setup Guide](docs/CLI_SETUP.md).
 
 #### 4. Test It!

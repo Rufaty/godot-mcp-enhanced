@@ -487,7 +487,7 @@ func _parse_plugin_cfg(cfg_path: String, plugin_dir: String) -> Dictionary:
 		"author": config.get_value("plugin", "author", ""),
 		"version": config.get_value("plugin", "version", ""),
 		"script": config.get_value("plugin", "script", ""),
-		"enabled": EditorInterface.get_singleton().is_plugin_enabled(plugin_dir) if EditorInterface.get_singleton() else false
+		"enabled": EditorInterface.is_plugin_enabled(plugin_dir) if EditorInterface else false
 	}
 	
 	return plugin_info

@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-server = "mcp_server:main"
+mcp-server = "mcp_server:main_entry"  # Changed from :main to :main_entry
 
 [build-system]
 requires = ["hatchling"]

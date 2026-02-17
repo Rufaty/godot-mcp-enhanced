@@ -142,8 +142,10 @@ func get_node_methods(node_path: String) -> Dictionary:
 		return {"success": false, "error": "Node not found: %s" % node_path}
 	
 	var methods = []
-	for method in node.get_method_list():
-		if method.flags & METHOD_FLAG_FROM_SCRIPT:
+	var script = node.get_script()
+	
+	if script:
+		for method in node.get_script_method_list():
 			methods.append({
 				"name": method.name,
 				"return_type": type_string(method.return.type),
@@ -195,7 +197,7 @@ func get_runtime_stats() -> Dictionary:
 		"nodes_count": Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		"orphan_nodes": Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT),
 		"memory_static": Performance.get_monitor(Performance.MEMORY_STATIC),
-		"memory_dynamic": Performance.get_monitor(Performance.MEMORY_DYNAMIC),
+#		"memory_dynamic": Performance.get_monitor(Performance.MEMORY_DYNAMIC),
 		"memory_static_max": Performance.get_monitor(Performance.MEMORY_STATIC_MAX),
 		"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 		"video_mem_used": Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED),
