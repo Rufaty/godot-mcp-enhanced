@@ -16,7 +16,6 @@ from mcp.types import (
     Tool,
     TextContent,
     ImageContent,
-    EmbeddedResource,
 )
 
 # Configuration
@@ -27,6 +26,22 @@ GODOT_BASE_URL = f"http://{GODOT_HOST}:{GODOT_PORT}"
 # Initialize MCP server
 app = Server("godot-mcp-enhanced")
 
+# Persistent HTTP client for Godot API calls (reused across requests)
+_http_client: Optional[httpx.AsyncClient] = None
+
+
+async def _get_http_client() -> httpx.AsyncClient:
+    """Get or create the persistent HTTP client."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=30.0)
+    return _http_client
+
+
+def _make_response(data: dict) -> list[TextContent]:
+    """Create a standard JSON text response."""
+    return [TextContent(type="text", text=json.dumps(data, indent=2))]
+
 
 async def call_godot_api(endpoint: str, params: dict = None) -> dict:
     """
@@ -35,10 +50,10 @@ async def call_godot_api(endpoint: str, params: dict = None) -> dict:
     url = f"{GODOT_BASE_URL}{endpoint}"
     
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(url, json=params or {})
-            response.raise_for_status()
-            return response.json()
+        client = await _get_http_client()
+        response = await client.post(url, json=params or {})
+        response.raise_for_status()
+        return response.json()
     except httpx.HTTPError as e:
         return {
             "success": False,
@@ -958,37 +973,28 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
     # Handle Godot process management tools (don't need Godot running)
     if name == "check_godot_running":
         try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
-                response = await client.get(f"{GODOT_BASE_URL}/project_info")
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "running": True,
-                        "responsive": response.status_code == 200
-                    }, indent=2)
-                )]
-        except:
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "success": True,
-                    "running": False,
-                    "responsive": False
-                }, indent=2)
-            )]
+            client = await _get_http_client()
+            response = await client.get(f"{GODOT_BASE_URL}/api/project/info", timeout=2.0)
+            return _make_response({
+                "success": True,
+                "running": True,
+                "responsive": response.status_code == 200
+            })
+        except Exception:
+            return _make_response({
+                "success": True,
+                "running": False,
+                "responsive": False
+            })
     
     if name == "launch_godot":
         import subprocess
         godot_exe = os.getenv("GODOT_EXECUTABLE")
         if not godot_exe:
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "success": False,
-                    "error": "GODOT_EXECUTABLE environment variable not set. Please set it to your Godot executable path."
-                }, indent=2)
-            )]
+            return _make_response({
+                "success": False,
+                "error": "GODOT_EXECUTABLE environment variable not set. Please set it to your Godot executable path."
+            })
         
         project_path = arguments.get("project_path")
         editor_mode = arguments.get("editor_mode", True)
@@ -1000,40 +1006,32 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             else:
                 args.extend(["--path", project_path])
             
+            creationflags = subprocess.CREATE_NEW_CONSOLE if os.name == 'nt' else 0
             process = subprocess.Popen(args, 
                                      stdout=subprocess.PIPE, 
                                      stderr=subprocess.PIPE,
-                                     creationflags=subprocess.CREATE_NEW_CONSOLE if os.name == 'nt' else 0)
+                                     creationflags=creationflags)
             
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "success": True,
-                    "message": f"Godot launched successfully with PID {process.pid}",
-                    "pid": process.pid,
-                    "note": "Wait a few seconds for Godot to start and the MCP server to become available"
-                }, indent=2)
-            )]
+            return _make_response({
+                "success": True,
+                "message": f"Godot launched successfully with PID {process.pid}",
+                "pid": process.pid,
+                "note": "Wait a few seconds for Godot to start and the MCP server to become available"
+            })
         except Exception as e:
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "success": False,
-                    "error": f"Failed to launch Godot: {str(e)}"
-                }, indent=2)
-            )]
+            return _make_response({
+                "success": False,
+                "error": f"Failed to launch Godot: {str(e)}"
+            })
     
     if name == "get_godot_version":
         import subprocess
         godot_exe = os.getenv("GODOT_EXECUTABLE")
         if not godot_exe:
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "success": False,
-                    "error": "GODOT_EXECUTABLE environment variable not set"
-                }, indent=2)
-            )]
+            return _make_response({
+                "success": False,
+                "error": "GODOT_EXECUTABLE environment variable not set"
+            })
         
         try:
             result = subprocess.run([godot_exe, "--version"], 
@@ -1041,22 +1039,16 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
                                   text=True, 
                                   timeout=5)
             version = result.stdout.strip()
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "success": True,
-                    "version": version,
-                    "executable": godot_exe
-                }, indent=2)
-            )]
+            return _make_response({
+                "success": True,
+                "version": version,
+                "executable": godot_exe
+            })
         except Exception as e:
-            return [TextContent(
-                type="text",
-                text=json.dumps({
-                    "success": False,
-                    "error": f"Failed to get Godot version: {str(e)}"
-                }, indent=2)
-            )]
+            return _make_response({
+                "success": False,
+                "error": f"Failed to get Godot version: {str(e)}"
+            })
     
     # Handle direct file system tools (work without Godot running)
     if name in ["read_scene_file", "write_scene_file", "read_script_file", "write_script_file",
@@ -1070,22 +1062,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             try:
                 with open(scene_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "path": scene_path,
-                        "content": content
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "path": scene_path, "content": content})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to read scene file: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to read scene file: {str(e)}"})
         
         elif name == "write_scene_file":
             scene_path = arguments.get("scene_path", "")
@@ -1098,22 +1077,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
                 os.makedirs(os.path.dirname(scene_path) if os.path.dirname(scene_path) else ".", exist_ok=True)
                 with open(scene_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "path": scene_path,
-                        "message": "Scene file written successfully"
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "path": scene_path, "message": "Scene file written successfully"})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to write scene file: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to write scene file: {str(e)}"})
         
         elif name == "read_script_file":
             script_path = arguments.get("script_path", "")
@@ -1123,22 +1089,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             try:
                 with open(script_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "path": script_path,
-                        "content": content
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "path": script_path, "content": content})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to read script file: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to read script file: {str(e)}"})
         
         elif name == "write_script_file":
             script_path = arguments.get("script_path", "")
@@ -1151,22 +1104,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
                 os.makedirs(os.path.dirname(script_path) if os.path.dirname(script_path) else ".", exist_ok=True)
                 with open(script_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "path": script_path,
-                        "message": "Script file written successfully"
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "path": script_path, "message": "Script file written successfully"})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to write script file: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to write script file: {str(e)}"})
         
         elif name == "read_project_settings":
             project_path = arguments.get("project_path", ".")
@@ -1175,22 +1115,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             try:
                 with open(settings_file, 'r', encoding='utf-8') as f:
                     content = f.read()
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "path": settings_file,
-                        "content": content
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "path": settings_file, "content": content})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to read project settings: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to read project settings: {str(e)}"})
         
         elif name == "update_project_settings":
             project_path = arguments.get("project_path", ".")
@@ -1214,21 +1141,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
                 with open(settings_file, 'w', encoding='utf-8') as f:
                     f.writelines(lines)
                 
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "message": "Project settings updated successfully"
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "message": "Project settings updated successfully"})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to update project settings: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to update project settings: {str(e)}"})
         
         elif name == "create_directory":
             dir_path = arguments.get("dir_path", "")
@@ -1237,22 +1152,9 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             
             try:
                 os.makedirs(dir_path, exist_ok=True)
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "path": dir_path,
-                        "message": "Directory created successfully"
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "path": dir_path, "message": "Directory created successfully"})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to create directory: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to create directory: {str(e)}"})
         
         elif name == "list_directory":
             dir_path = arguments.get("dir_path", ".")
@@ -1270,29 +1172,12 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
                 else:
                     files = [os.path.join(dir_path, f) for f in os.listdir(dir_path)]
                 
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": True,
-                        "path": dir_path,
-                        "files": files,
-                        "count": len(files)
-                    }, indent=2)
-                )]
+                return _make_response({"success": True, "path": dir_path, "files": files, "count": len(files)})
             except Exception as e:
-                return [TextContent(
-                    type="text",
-                    text=json.dumps({
-                        "success": False,
-                        "error": f"Failed to list directory: {str(e)}"
-                    }, indent=2)
-                )]
+                return _make_response({"success": False, "error": f"Failed to list directory: {str(e)}"})
     
     if name not in endpoint_map:
-        return [TextContent(
-            type="text",
-            text=json.dumps({"success": False, "error": f"Unknown tool: {name}"}, indent=2)
-        )]
+        return _make_response({"success": False, "error": f"Unknown tool: {name}"})
     
     endpoint = endpoint_map[name]
     result = await call_godot_api(endpoint, arguments or {})
@@ -1337,10 +1222,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             return response
     
     # Default: return JSON result
-    return [TextContent(
-        type="text",
-        text=json.dumps(result, indent=2)
-    )]
+    return _make_response(result)
 
 def main_entry():
     """Synchronous entry point for console script"""
@@ -1349,12 +1231,19 @@ def main_entry():
 
 async def main():
     """Main entry point for the MCP server"""
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(
-            read_stream,
-            write_stream,
-            app.create_initialization_options()
-        )
+    try:
+        async with stdio_server() as (read_stream, write_stream):
+            await app.run(
+                read_stream,
+                write_stream,
+                app.create_initialization_options()
+            )
+    finally:
+        # Clean up persistent HTTP client on shutdown
+        global _http_client
+        if _http_client and not _http_client.is_closed:
+            await _http_client.aclose()
+            _http_client = None
 
 
 if __name__ == "__main__":
