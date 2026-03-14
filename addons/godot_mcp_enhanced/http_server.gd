@@ -1,8 +1,8 @@
 @tool
 extends Node
 
-# Debug mode - set to true for verbose logging
-const DEBUG = true
+# Debug mode - set to false to reduce logging noise
+const DEBUG = false
 
 var tcp_server: TCPServer
 var port: int = 3571
@@ -10,6 +10,9 @@ var routes: Dictionary = {}
 var is_running: bool = false
 var poll_timer: Timer
 var pending_clients: Array[StreamPeerTCP] = []
+
+# Cached RegEx for URL decoding (avoids recompilation per request)
+var _url_decode_regex: RegEx
 
 # Debug counters
 var poll_count: int = 0
@@ -29,6 +32,10 @@ func debug_log(message: String) -> void:
 
 func _ready() -> void:
 	debug_log("_ready() called")
+	
+	# Initialize cached regex for URL decoding
+	_url_decode_regex = RegEx.new()
+	_url_decode_regex.compile("%([0-9A-Fa-f]{2})")
 	
 	# Don't overwrite tcp_server if it already exists (might be listening!)
 	if tcp_server == null:
@@ -293,18 +300,20 @@ func _parse_http_request(request: String) -> Dictionary:
 func _send_response(client: StreamPeerTCP, status_code: int, data: Variant) -> void:
 	var status_text = _get_status_text(status_code)
 	var json_data = JSON.stringify(data)
+	var json_bytes = json_data.to_utf8_buffer()
 	
 	var response = "HTTP/1.1 %d %s\r\n" % [status_code, status_text]
-	response += "Content-Type: application/json\r\n"
-	response += "Content-Length: %d\r\n" % json_data.length()
+	response += "Content-Type: application/json; charset=utf-8\r\n"
+	response += "Content-Length: %d\r\n" % json_bytes.size()
 	response += "Access-Control-Allow-Origin: *\r\n"
 	response += "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
 	response += "Access-Control-Allow-Headers: Content-Type\r\n"
 	response += "Connection: close\r\n"
 	response += "\r\n"
-	response += json_data
 	
-	client.put_data(response.to_utf8_buffer())
+	var header_bytes = response.to_utf8_buffer()
+	client.put_data(header_bytes)
+	client.put_data(json_bytes)
 	# Disconnect after a short delay to ensure data is sent
 	get_tree().create_timer(0.1).timeout.connect(func(): client.disconnect_from_host())
 
@@ -322,15 +331,12 @@ func _get_status_text(code: int) -> String:
 func _url_decode(text: String) -> String:
 	var result = text.replace("+", " ")
 	
-	# Handle percent encoding
-	var regex = RegEx.new()
-	regex.compile("%([0-9A-Fa-f]{2})")
-	
-	var matches = regex.search_all(result)
+	# Handle percent encoding using cached regex
+	var matches = _url_decode_regex.search_all(result)
 	for match_obj in matches:
 		var hex_str = match_obj.get_string(1)
 		var char_code = hex_str.hex_to_int()
-		var char = char(char_code)
-		result = result.replace(match_obj.get_string(), char)
+		var decoded_str = char(char_code)
+		result = result.replace(match_obj.get_string(), decoded_str)
 	
 	return result

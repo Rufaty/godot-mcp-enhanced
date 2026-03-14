@@ -125,7 +125,7 @@ func _on_test_pressed() -> void:
 	OS.shell_open(url)
 
 
-func _on_copy_kiro_pressed() -> void:
+func _copy_mcp_config(ide_name: String) -> void:
 	var python_path = "path/to/python/.venv/Scripts/python.exe"  # User needs to update
 	var cwd_path = "path/to/godot-mcp-enhanced/python"  # User needs to update
 	
@@ -141,48 +141,20 @@ func _on_copy_kiro_pressed() -> void:
 	}
 	
 	DisplayServer.clipboard_set(JSON.stringify(mcp_config, "\t", false))
-	print("[MCP Enhanced] Kiro IDE configuration copied to clipboard!")
+	print("[MCP Enhanced] %s configuration copied to clipboard!" % ide_name)
 	print("[MCP Enhanced] Remember to update the 'command' and 'cwd' paths!")
+
+
+func _on_copy_kiro_pressed() -> void:
+	_copy_mcp_config("Kiro IDE")
 
 
 func _on_copy_windsurf_pressed() -> void:
-	var python_path = "path/to/python/.venv/Scripts/python.exe"
-	var cwd_path = "path/to/godot-mcp-enhanced/python"
-	
-	var mcp_config = {
-		"mcpServers": {
-			"godot-mcp-enhanced": {
-				"command": python_path,
-				"args": ["-m", "mcp_server"],
-				"cwd": cwd_path,
-				"env": current_config
-			}
-		}
-	}
-	
-	DisplayServer.clipboard_set(JSON.stringify(mcp_config, "\t", false))
-	print("[MCP Enhanced] Windsurf configuration copied to clipboard!")
-	print("[MCP Enhanced] Remember to update the 'command' and 'cwd' paths!")
+	_copy_mcp_config("Windsurf")
 
 
 func _on_copy_cursor_pressed() -> void:
-	var python_path = "path/to/python/.venv/Scripts/python.exe"
-	var cwd_path = "path/to/godot-mcp-enhanced/python"
-	
-	var mcp_config = {
-		"mcpServers": {
-			"godot-mcp-enhanced": {
-				"command": python_path,
-				"args": ["-m", "mcp_server"],
-				"cwd": cwd_path,
-				"env": current_config
-			}
-		}
-	}
-	
-	DisplayServer.clipboard_set(JSON.stringify(mcp_config, "\t", false))
-	print("[MCP Enhanced] Cursor configuration copied to clipboard!")
-	print("[MCP Enhanced] Remember to update the 'command' and 'cwd' paths!")
+	_copy_mcp_config("Cursor")
 
 
 func _on_edit_config_pressed() -> void:

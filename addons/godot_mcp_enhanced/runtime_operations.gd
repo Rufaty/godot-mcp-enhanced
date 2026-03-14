@@ -415,11 +415,17 @@ func _scan_assets_recursive(path: String, asset_type: String, assets: Array) -> 
 							matches = extension in ["gdshader", "shader"]
 					
 					if matches:
+						var file_size = 0
+						if FileAccess.file_exists(full_path):
+							var f = FileAccess.open(full_path, FileAccess.READ)
+							if f:
+								file_size = f.get_length()
+								f.close()
 						assets.append({
 							"path": full_path,
 							"name": file_name,
 							"extension": extension,
-							"size": FileAccess.get_file_as_bytes(full_path).size() if FileAccess.file_exists(full_path) else 0
+							"size": file_size
 						})
 			
 			file_name = dir.get_next()
@@ -443,7 +449,10 @@ func get_asset_info(asset_path: String) -> Dictionary:
 	}
 	
 	if FileAccess.file_exists(asset_path):
-		info["size"] = FileAccess.get_file_as_bytes(asset_path).size()
+		var f = FileAccess.open(asset_path, FileAccess.READ)
+		if f:
+			info["size"] = f.get_length()
+			f.close()
 		info["modified_time"] = FileAccess.get_modified_time(asset_path)
 	
 	if ResourceLoader.exists(asset_path):

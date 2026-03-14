@@ -56,11 +56,16 @@ func _build_directory_tree(path: String, filters: Array, depth: int = 0, max_dep
 					"is_dir": true
 				})
 			else:
+				var file_size = 0
+				var f = FileAccess.open(item_path, FileAccess.READ)
+				if f:
+					file_size = f.get_length()
+					f.close()
 				items.append({
 					"name": item_name,
 					"path": item_path,
 					"type": _get_file_type(item_name),
-					"size": FileAccess.get_file_as_bytes(item_path).size(),
+					"size": file_size,
 					"is_dir": false
 				})
 		

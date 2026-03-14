@@ -151,6 +151,8 @@ func _setup_http_routes() -> void:
 	http_server.register_route("/api/project/search_files", _handle_search_files)
 	http_server.register_route("/api/project/uid_to_path", _handle_uid_to_project_path)
 	http_server.register_route("/api/project/path_to_uid", _handle_project_path_to_uid)
+	http_server.register_route("/api/project/quick_overview", _handle_quick_project_overview)
+	http_server.register_route("/api/project/analyze_dependencies", _handle_analyze_project_dependencies)
 	
 	# Scene tools
 	http_server.register_route("/api/scene/tree", _handle_get_scene_tree)
@@ -185,6 +187,19 @@ func _setup_http_routes() -> void:
 	http_server.register_route("/api/editor/running_scene_screenshot", _handle_get_running_scene_screenshot)
 	http_server.register_route("/api/editor/execute_script", _handle_execute_editor_script)
 	http_server.register_route("/api/editor/clear_logs", _handle_clear_output_logs)
+	
+	# Runtime operations
+	http_server.register_route("/api/runtime/simulate_key", _handle_simulate_key_press)
+	http_server.register_route("/api/runtime/simulate_action", _handle_simulate_action)
+	http_server.register_route("/api/runtime/get_runtime_stats", _handle_get_runtime_stats)
+	http_server.register_route("/api/runtime/get_node_properties", _handle_get_node_properties)
+	http_server.register_route("/api/runtime/call_node_method", _handle_call_node_method)
+	http_server.register_route("/api/runtime/get_installed_plugins", _handle_get_installed_plugins)
+	http_server.register_route("/api/runtime/get_plugin_info", _handle_get_plugin_info)
+	http_server.register_route("/api/runtime/get_assets_by_type", _handle_get_assets_by_type)
+	http_server.register_route("/api/runtime/get_asset_info", _handle_get_asset_info)
+	http_server.register_route("/api/runtime/run_test_script", _handle_run_test_script)
+	http_server.register_route("/api/runtime/get_input_actions", _handle_get_input_actions)
 	
 	# Windsurf-specific tools
 	http_server.register_route("/api/windsurf/context", _handle_get_windsurf_context)
@@ -239,6 +254,14 @@ func _handle_project_path_to_uid(params: Dictionary) -> Dictionary:
 	var path = params.get("path", "")
 	var uid = file_operations.project_path_to_uid(path)
 	return {"success": true, "data": {"uid": uid}}
+
+
+func _handle_quick_project_overview(params: Dictionary) -> Dictionary:
+	return file_operations.get_quick_project_overview()
+
+
+func _handle_analyze_project_dependencies(params: Dictionary) -> Dictionary:
+	return file_operations.analyze_project_dependencies()
 
 
 # HTTP Route Handlers - Scene Tools
@@ -365,6 +388,64 @@ func _handle_execute_editor_script(params: Dictionary) -> Dictionary:
 
 func _handle_clear_output_logs(params: Dictionary) -> Dictionary:
 	return debugger_integration.clear_logs()
+
+
+# HTTP Route Handlers - Runtime Operations
+func _handle_simulate_key_press(params: Dictionary) -> Dictionary:
+	var keycode = params.get("keycode", 0)
+	var pressed = params.get("pressed", true)
+	return runtime_operations.simulate_key_press(keycode, pressed)
+
+
+func _handle_simulate_action(params: Dictionary) -> Dictionary:
+	var action_name = params.get("action_name", "")
+	var pressed = params.get("pressed", true)
+	var strength = params.get("strength", 1.0)
+	return runtime_operations.simulate_action(action_name, pressed, strength)
+
+
+func _handle_get_runtime_stats(params: Dictionary) -> Dictionary:
+	return runtime_operations.get_runtime_stats()
+
+
+func _handle_get_node_properties(params: Dictionary) -> Dictionary:
+	var node_path = params.get("node_path", "")
+	return runtime_operations.get_node_properties(node_path)
+
+
+func _handle_call_node_method(params: Dictionary) -> Dictionary:
+	var node_path = params.get("node_path", "")
+	var method_name = params.get("method_name", "")
+	var args = params.get("args", [])
+	return runtime_operations.call_node_method(node_path, method_name, args)
+
+
+func _handle_get_installed_plugins(params: Dictionary) -> Dictionary:
+	return runtime_operations.get_installed_plugins()
+
+
+func _handle_get_plugin_info(params: Dictionary) -> Dictionary:
+	var plugin_name = params.get("plugin_name", "")
+	return runtime_operations.get_plugin_info(plugin_name)
+
+
+func _handle_get_assets_by_type(params: Dictionary) -> Dictionary:
+	var asset_type = params.get("asset_type", "")
+	return runtime_operations.get_assets_by_type(asset_type)
+
+
+func _handle_get_asset_info(params: Dictionary) -> Dictionary:
+	var asset_path = params.get("asset_path", "")
+	return runtime_operations.get_asset_info(asset_path)
+
+
+func _handle_run_test_script(params: Dictionary) -> Dictionary:
+	var script_path = params.get("script_path", "")
+	return runtime_operations.run_test_script(script_path)
+
+
+func _handle_get_input_actions(params: Dictionary) -> Dictionary:
+	return runtime_operations.get_input_actions()
 
 
 # Windsurf-specific handlers
