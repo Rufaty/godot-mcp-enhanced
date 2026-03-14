@@ -315,8 +315,7 @@ func get_script_properties(script_path: String) -> Dictionary:
 
 
 func format_gdscript(code: String) -> Dictionary:
-	"""Basic GDScript formatting (Windsurf feature)"""
-	# Simple formatting rules
+	"""Basic GDScript formatting"""
 	var lines = code.split("\n")
 	var formatted_lines = []
 	var indent_level = 0
@@ -324,16 +323,21 @@ func format_gdscript(code: String) -> Dictionary:
 	for line in lines:
 		var trimmed = line.strip_edges()
 		
-		# Decrease indent for closing braces, end statements
-		if trimmed.begins_with("}") or trimmed.begins_with("return") or trimmed.begins_with("pass"):
+		# Skip empty lines
+		if trimmed == "":
+			formatted_lines.append("")
+			continue
+		
+		# Decrease indent for dedent keywords at the start of a line
+		if trimmed.begins_with("elif ") or trimmed.begins_with("else:") or trimmed.begins_with("except") or trimmed.begins_with("finally:"):
 			indent_level = max(0, indent_level - 1)
 		
 		# Add indentation
 		var formatted_line = "\t".repeat(indent_level) + trimmed
 		formatted_lines.append(formatted_line)
 		
-		# Increase indent for opening statements
-		if trimmed.ends_with(":") or trimmed.ends_with("{"):
+		# Increase indent after block-opening colons
+		if trimmed.ends_with(":") and not trimmed.begins_with("#"):
 			indent_level += 1
 	
 	var formatted_code = "\n".join(formatted_lines)

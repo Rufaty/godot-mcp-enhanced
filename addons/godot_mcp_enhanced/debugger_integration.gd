@@ -39,24 +39,28 @@ func get_recent_errors(count: int = 5) -> Array:
 
 
 func _get_script_errors() -> Array:
-	"""Get script compilation errors from the editor"""
+	"""Get script compilation errors from the editor without side effects"""
 	var script_errors = []
 	
 	# Try to access script editor for errors
 	var script_editor = editor_interface.get_script_editor()
 	if script_editor:
-		# Get open scripts and check for errors
 		var open_scripts = script_editor.get_open_scripts()
 		for script in open_scripts:
 			if script is Script:
-				var error = script.reload()
-				if error != OK:
-					script_errors.append({
-						"type": "script_error",
-						"path": script.resource_path,
-						"error": error_string(error),
-						"timestamp": Time.get_unix_time_from_system()
-					})
+				# Check for errors by validating a copy of the source code
+				# instead of calling reload() which has side effects
+				if script.has_source_code():
+					var test_script = GDScript.new()
+					test_script.source_code = script.source_code
+					var error = test_script.reload()
+					if error != OK:
+						script_errors.append({
+							"type": "script_error",
+							"path": script.resource_path,
+							"error": error_string(error),
+							"timestamp": Time.get_unix_time_from_system()
+						})
 	
 	return script_errors
 
@@ -155,12 +159,13 @@ func get_performance_metrics() -> Dictionary:
 		"orphan_nodes": Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT),
 		"memory": {
 			"static": Performance.get_monitor(Performance.MEMORY_STATIC),
-			"dynamic": Performance.get_monitor(Performance.MEMORY_STATIC_MAX),
+			"static_max": Performance.get_monitor(Performance.MEMORY_STATIC_MAX),
 			"message_buffer": Performance.get_monitor(Performance.MEMORY_MESSAGE_BUFFER_MAX)
 		},
 		"render": {
-			"vertices": Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
-			"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)
+			"objects_in_frame": Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+			"primitives_in_frame": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+			"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)
 		}
 	}
 	
