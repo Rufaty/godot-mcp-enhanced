@@ -58,7 +58,7 @@ async def run_tests():
         try:
             response = await client.get(f"http://{GODOT_HOST}:{GODOT_PORT}/", timeout=2.0)
             console.print("[green]✓[/green] Server is reachable\n")
-        except:
+        except Exception:
             console.print("[red]✗[/red] Cannot connect to server")
             console.print(f"\n[yellow]Make sure:[/yellow]")
             console.print("1. Godot is running with your project open")
@@ -186,7 +186,7 @@ async def main():
                     choice = sys.stdin.readline().strip().lower()
                     if choice == 'y':
                         await test_screenshot()
-        except:
+        except Exception:
             pass
         
     except KeyboardInterrupt:

@@ -151,6 +151,8 @@ func _setup_http_routes() -> void:
 	http_server.register_route("/api/project/search_files", _handle_search_files)
 	http_server.register_route("/api/project/uid_to_path", _handle_uid_to_project_path)
 	http_server.register_route("/api/project/path_to_uid", _handle_project_path_to_uid)
+	http_server.register_route("/api/project/quick_overview", _handle_quick_project_overview)
+	http_server.register_route("/api/project/analyze_dependencies", _handle_analyze_project_dependencies)
 	
 	# Scene tools
 	http_server.register_route("/api/scene/tree", _handle_get_scene_tree)
@@ -252,6 +254,14 @@ func _handle_project_path_to_uid(params: Dictionary) -> Dictionary:
 	var path = params.get("path", "")
 	var uid = file_operations.project_path_to_uid(path)
 	return {"success": true, "data": {"uid": uid}}
+
+
+func _handle_quick_project_overview(params: Dictionary) -> Dictionary:
+	return file_operations.get_quick_project_overview()
+
+
+func _handle_analyze_project_dependencies(params: Dictionary) -> Dictionary:
+	return file_operations.analyze_project_dependencies()
 
 
 # HTTP Route Handlers - Scene Tools

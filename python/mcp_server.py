@@ -138,6 +138,24 @@ async def list_tools() -> list[Tool]:
                 "required": ["path"]
             }
         ),
+        Tool(
+            name="get_quick_project_overview",
+            description="Get a quick overview of the project structure including scenes, scripts, and resources with counts and types",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="analyze_project_dependencies",
+            description="Analyze project dependencies including autoloads, plugins, and export presets",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
         
         # Scene Tools
         Tool(
@@ -968,6 +986,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         "get_asset_info": "/api/runtime/get_asset_info",
         "run_test_script": "/api/runtime/run_test_script",
         "get_input_actions": "/api/runtime/get_input_actions",
+        
+        # Project analysis tools
+        "get_quick_project_overview": "/api/project/quick_overview",
+        "analyze_project_dependencies": "/api/project/analyze_dependencies",
     }
     
     # Handle Godot process management tools (don't need Godot running)
