@@ -336,7 +336,7 @@ func _url_decode(text: String) -> String:
 	for match_obj in matches:
 		var hex_str = match_obj.get_string(1)
 		var char_code = hex_str.hex_to_int()
-		var decoded_char = char(char_code)
-		result = result.replace(match_obj.get_string(), decoded_char)
+		var decoded_str = char(char_code)
+		result = result.replace(match_obj.get_string(), decoded_str)
 	
 	return result

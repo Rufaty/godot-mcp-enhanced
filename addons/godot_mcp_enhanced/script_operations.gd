@@ -329,7 +329,7 @@ func format_gdscript(code: String) -> Dictionary:
 			continue
 		
 		# Decrease indent for dedent keywords at the start of a line
-		if trimmed.begins_with("elif ") or trimmed.begins_with("else:") or trimmed.begins_with("except") or trimmed.begins_with("finally:"):
+		if trimmed.begins_with("elif ") or trimmed.begins_with("else:") or trimmed.begins_with("except:") or trimmed.begins_with("except ") or trimmed.begins_with("finally:"):
 			indent_level = max(0, indent_level - 1)
 		
 		# Add indentation
