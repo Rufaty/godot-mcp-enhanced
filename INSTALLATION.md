@@ -1,475 +1,97 @@
-# Installation Guide - Godot MCP Enhanced
+# Installation
 
-Complete step-by-step installation instructions for all platforms.
+Two parts: a Godot editor plugin and a Python MCP server. The plugin runs inside the editor and answers on 127.0.0.1:3571. The Python server is what your MCP client actually launches; it forwards tool calls to the plugin.
 
----
+## Requirements
 
-## 📋 System Requirements
+- Godot 4.4 or newer (tested on 4.7)
+- Python 3.10 or newer
+- uv (recommended) or pip
 
-- **Godot Engine**: 4.2 or higher
-- **Python**: 3.10 or higher
-- **Operating System**: Windows, macOS, or Linux
-- **RAM**: 4GB minimum, 8GB recommended
-- **AI Client**: Windsurf, Cursor, Claude Desktop, or any MCP-compatible client
+## 1. Install the editor plugin
 
----
+1. Copy `addons/godot_mcp_enhanced/` into your project's `addons/` folder.
+2. Open the project and enable the plugin: Project > Project Settings > Plugins > Godot MCP Enhanced.
+3. Check the Output tab. You should see the server start on port 3571 and, on first load, a note that an auth token was generated.
 
-## 🪟 Windows Installation
+The token lands in `godot_mcp_config.json` at your project root. Never commit that file. If you use the shipped `.gitignore` it is already excluded.
 
-### 1. Install Prerequisites
+## 2. Install the Python server
 
-#### Install Python 3.10+
-```powershell
-# Download from python.org or use winget
-winget install Python.Python.3.11
+```bash
+cd python
+uv sync
 ```
 
-#### Install uv (Package Manager)
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+Or with plain pip:
+
+```bash
+cd python
+python -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
+pip install -e .
 ```
 
-Verify installation:
-```powershell
-python --version
-uv --version
-```
+## 3. Configure your MCP client
 
-### 2. Install Godot Plugin
+The fastest path: open the MCP panel at the bottom of the Godot editor and press the copy button for your client. It fills in the port, token, and project path for you. You only adjust the `command` and `cwd` paths.
 
-1. **Download** the plugin:
-   - Go to [Releases](https://github.com/Rufaty/godot-mcp-enhanced/releases)
-   - Download `godot-mcp-enhanced-v1.0.0.zip`
-
-2. **Extract** the archive
-
-3. **Copy** to your project:
-   ```
-   YourGodotProject/
-   └── addons/
-       └── godot_mcp_enhanced/  ← Copy this folder here
-   ```
-
-4. **Enable** in Godot:
-   - Open your project in Godot
-   - `Project` → `Project Settings` → `Plugins`
-   - Enable "Godot MCP Enhanced"
-   - Check the bottom panel for "MCP Enhanced" tab
-
-### 3. Setup Python Server
-
-```powershell
-# Navigate to the python directory
-cd C:\path\to\godot-mcp-enhanced\python
-
-# Create virtual environment and install
-uv venv
-uv pip install -e .
-
-# Test the server
-uv run python -m mcp_server --help
-```
-
-### 4. Configure Windsurf
-
-Create `.windsurf\mcp.json` in your Godot project:
+Manual config, same shape for every client:
 
 ```json
 {
   "mcpServers": {
     "godot-mcp-enhanced": {
-      "command": "uv",
-      "args": [
-        "run",
-        "python",
-        "-m",
-        "mcp_server"
-      ],
-      "cwd": "C:\\path\\to\\godot-mcp-enhanced\\python",
+      "command": "/path/to/godot-mcp-enhanced/python/.venv/bin/python",
+      "args": ["-m", "mcp_server"],
+      "cwd": "/path/to/godot-mcp-enhanced/python",
       "env": {
         "GDAI_MCP_SERVER_PORT": "3571",
-        "GDAI_RUNTIME_SERVER_PORT": "3572",
-        "AUTO_SCREENSHOT": "true"
+        "GODOT_MCP_TOKEN": "<token from godot_mcp_config.json>",
+        "GODOT_PROJECT_PATH": "/path/to/your/game"
       }
     }
   }
 }
 ```
 
-**Note**: Use double backslashes `\\` in Windows paths!
+On Windows the interpreter path is `.venv\Scripts\python.exe`.
 
----
+Where it goes:
 
-## 🍎 macOS Installation
+| Client | Location |
+| --- | --- |
+| Claude Desktop | `claude_desktop_config.json` (Settings > Developer > Edit Config) |
+| Cursor | `.cursor/mcp.json` in your workspace, or global MCP settings |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Kiro | `.kiro/settings/mcp.json` |
 
-### 1. Install Prerequisites
+You can omit `GODOT_MCP_TOKEN` entirely: when `GODOT_PROJECT_PATH` is set, the server reads the token from `godot_mcp_config.json` on its own. That way the config survives token regeneration.
 
-#### Install Python 3.10+
-```bash
-# Using Homebrew
-brew install python@3.11
-```
+## 4. Verify
 
-#### Install uv
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Add to your shell profile (~/.zshrc or ~/.bash_profile):
-```bash
-export PATH="$HOME/.cargo/bin:$PATH"
-```
-
-Reload shell and verify:
-```bash
-source ~/.zshrc  # or ~/.bash_profile
-python3 --version
-uv --version
-```
-
-### 2. Install Godot Plugin
-
-1. **Download** the plugin from [Releases](https://github.com/Rufaty/godot-mcp-enhanced/releases)
-
-2. **Extract** and copy to your project:
-   ```bash
-   cp -r addons/godot_mcp_enhanced /path/to/YourGodotProject/addons/
-   ```
-
-3. **Handle macOS Gatekeeper** (if you get verification errors):
-   ```bash
-   cd /path/to/YourGodotProject/addons/godot_mcp_enhanced
-   xattr -cr .
-   ```
-
-4. **Enable** in Godot:
-   - Open project in Godot
-   - `Project` → `Project Settings` → `Plugins`
-   - Enable "Godot MCP Enhanced"
-
-### 3. Setup Python Server
+With the editor open and the plugin enabled:
 
 ```bash
-cd /path/to/godot-mcp-enhanced/python
-
-# Create virtual environment and install
-uv venv
-uv pip install -e .
-
-# Test the server
-uv run python -m mcp_server
+cd python
+GODOT_MCP_TOKEN=<token> python test_connection.py
 ```
 
-### 4. Configure Windsurf
-
-Create `.windsurf/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "godot-mcp-enhanced": {
-      "command": "uv",
-      "args": [
-        "run",
-        "python",
-        "-m",
-        "mcp_server"
-      ],
-      "cwd": "/Users/yourname/path/to/godot-mcp-enhanced/python",
-      "env": {
-        "GDAI_MCP_SERVER_PORT": "3571",
-        "GDAI_RUNTIME_SERVER_PORT": "3572",
-        "AUTO_SCREENSHOT": "true"
-      }
-    }
-  }
-}
-```
-
----
-
-## 🐧 Linux Installation
-
-### 1. Install Prerequisites
-
-#### Install Python 3.10+
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install python3.11 python3.11-venv
-
-# Fedora
-sudo dnf install python3.11
-
-# Arch
-sudo pacman -S python
-```
-
-#### Install uv
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Add to ~/.bashrc or ~/.zshrc:
-```bash
-export PATH="$HOME/.cargo/bin:$PATH"
-```
-
-Verify:
-```bash
-source ~/.bashrc
-python3 --version
-uv --version
-```
-
-### 2. Install Godot Plugin
-
-```bash
-# Download and extract
-wget https://github.com/Rufaty/godot-mcp-enhanced/releases/download/v1.0.0/godot-mcp-enhanced-v1.0.0.zip
-unzip godot-mcp-enhanced-v1.0.0.zip
-
-# Copy to your project
-cp -r addons/godot_mcp_enhanced /path/to/YourGodotProject/addons/
-
-# Enable in Godot
-# Project → Project Settings → Plugins → Enable "Godot MCP Enhanced"
-```
-
-### 3. Setup Python Server
-
-```bash
-cd /path/to/godot-mcp-enhanced/python
-
-# Create virtual environment and install
-uv venv
-uv pip install -e .
-
-# Test
-uv run python -m mcp_server
-```
-
-### 4. Configure Windsurf
-
-Create `.windsurf/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "godot-mcp-enhanced": {
-      "command": "uv",
-      "args": [
-        "run",
-        "python",
-        "-m",
-        "mcp_server"
-      ],
-      "cwd": "/home/yourname/path/to/godot-mcp-enhanced/python",
-      "env": {
-        "GDAI_MCP_SERVER_PORT": "3571",
-        "GDAI_RUNTIME_SERVER_PORT": "3572",
-        "AUTO_SCREENSHOT": "true"
-      }
-    }
-  }
-}
-```
-
----
-
-## 🔧 Post-Installation Setup
-
-### 1. Verify Godot Plugin
-
-1. Open your Godot project
-2. Look for "MCP Enhanced" tab in bottom panel
-3. Click "Start Server" button
-4. Should show "Running on port 3571"
-
-### 2. Test Python Server
-
-```bash
-cd godot-mcp-enhanced/python
-
-# Run server manually
-uv run python -m mcp_server
-
-# Should start without errors
-# Press Ctrl+C to stop
-```
-
-### 3. Test MCP Connection
-
-In Windsurf:
-```
-@godot get_project_info
-```
-
-Should return your Godot project information!
-
----
-
-## 🎯 Quick Start
-
-Once installed, try these commands:
-
-```
-@godot get windsurf context
-@godot get_editor_screenshot
-@godot get scene tree
-@godot search files for "player"
-```
-
----
-
-## 🔄 Updating
-
-### Update Plugin
-
-1. Download new version
-2. Replace `addons/godot_mcp_enhanced/` folder
-3. Restart Godot
-
-### Update Python Server
-
-```bash
-cd godot-mcp-enhanced/python
-git pull  # If using git
-uv pip install -e . --force-reinstall
-```
-
----
-
-## 🗑️ Uninstallation
-
-### Remove Plugin
-
-1. In Godot: `Project` → `Project Settings` → `Plugins`
-2. Disable "Godot MCP Enhanced"
-3. Delete `addons/godot_mcp_enhanced/` folder
-
-### Remove Python Server
-
-```bash
-# Remove virtual environment
-cd godot-mcp-enhanced/python
-rm -rf .venv
-
-# Remove from AI client config
-# Delete the "godot-mcp-enhanced" entry from .windsurf/mcp.json
-```
-
----
-
-## ❓ Troubleshooting Installation
-
-### Python Not Found
-
-**Windows**:
-```powershell
-# Add Python to PATH manually
-$env:Path += ";C:\Users\YourName\AppData\Local\Programs\Python\Python311"
-```
-
-**macOS/Linux**:
-```bash
-# Use python3 explicitly
-alias python=python3
-```
-
-### uv Command Not Found
-
-**Windows**:
-```powershell
-# Add to PATH
-$env:Path += ";$env:USERPROFILE\.cargo\bin"
-```
-
-**macOS/Linux**:
-```bash
-export PATH="$HOME/.cargo/bin:$PATH"
-source ~/.bashrc  # or ~/.zshrc
-```
-
-### Permission Denied (macOS/Linux)
-
-```bash
-# Fix permissions
-chmod +x /path/to/godot-mcp-enhanced/python/mcp_server.py
-```
-
-### Port Already in Use
-
-If port 3571 is in use:
-
-1. Edit `godot_mcp_config.json`:
-   ```json
-   {
-     "GDAI_MCP_SERVER_PORT": "3581"
-   }
-   ```
-
-2. Update Windsurf config to match
-
-3. Restart both Godot and Windsurf
-
-### Plugin Doesn't Load
-
-1. Check Godot version (must be 4.2+)
-2. Look at Godot's Output tab for errors
-3. Ensure `plugin.cfg` exists in the plugin folder
-4. Try removing and re-adding the plugin folder
-
----
-
-## 🆘 Getting Help
-
-If you encounter issues:
-
-1. **Check the logs**:
-   - Godot: Output tab
-   - Python: Terminal where server is running
-
-2. **Common solutions**:
-   - Restart Godot
-   - Restart Windsurf
-   - Check firewall settings
-   - Verify all paths are correct
-
-3. **Get support**:
-   - [GitHub Issues](https://github.com/Rufaty/godot-mcp-enhanced/issues)
-   - [Discussions](https://github.com/Rufaty/godot-mcp-enhanced/discussions)
-
----
-
-## ✅ Installation Checklist
-
-- [ ] Python 3.10+ installed and in PATH
-- [ ] uv package manager installed
-- [ ] Godot Engine 4.2+ installed
-- [ ] Plugin copied to project's addons folder
-- [ ] Plugin enabled in Godot Project Settings
-- [ ] MCP Enhanced tab visible in Godot bottom panel
-- [ ] Python server installed (`uv pip install -e .`)
-- [ ] Windsurf configured with mcp.json
-- [ ] Test connection works (`@godot get_project_info`)
-
----
-
-## 🎉 Next Steps
-
-Installation complete! Now check out:
-
-- [Windsurf Setup Guide](docs/WINDSURF_SETUP.md) - Maximize your Windsurf workflow
-- [README](README.md) - Full feature documentation
-- [Examples](docs/EXAMPLES.md) - Real-world usage examples
-
----
-
-<div align="center">
-
-**Ready to build games with AI! 🚀**
-
-[⬆ Back to Top](#installation-guide---godot-mcp-enhanced)
-
-</div>
+Five endpoint checks should pass. Then ask your assistant something like "what scenes does my project have" and watch it answer from the live editor.
+
+## Environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GODOT_MCP_TOKEN` | read from config file | Auth token for the bridge |
+| `GODOT_PROJECT_PATH` | cwd | Project root; also the jail for direct file tools |
+| `GDAI_MCP_SERVER_PORT` | 3571 | Bridge port |
+| `GODOT_HOST` | 127.0.0.1 | Bridge host |
+| `GODOT_EXECUTABLE` | (none) | Godot binary path for `launch_godot` |
+
+## Troubleshooting
+
+- **401 Unauthorized**: token mismatch. Compare your client env against `godot_mcp_config.json`. The plugin regenerates a token only if the key is missing, so a stale copy in the client config is the usual cause.
+- **Connection refused**: plugin not enabled, editor not running, or the port is taken. Use the Restart Server button in the MCP panel and read the Output tab.
+- **403 Forbidden**: something other than the Python bridge is calling the API, or a proxy rewrote your Host header. Direct browser requests work only via the panel's Test button, which appends the token.
+- **Tools time out on screenshots**: large editor windows produce large PNGs. Give it a few seconds; the client timeout is 30.

@@ -1,21 +1,36 @@
-# Godot MCP Enhanced - Python Server
+# Python MCP server
 
-This is the Python MCP server component for Godot MCP Enhanced.
+This directory holds the MCP server that clients (Claude Desktop, Cursor, Windsurf, Kiro) launch over stdio. It proxies tool calls to the Godot editor plugin's HTTP API on 127.0.0.1.
 
-## Installation
-
-```bash
-uv venv
-uv pip install -e .
-```
-
-## Running
+## Setup
 
 ```bash
-python -m mcp_server
+cd python
+uv sync          # or: pip install -e .
 ```
 
-## Usage
+Python 3.10 or newer.
 
-This server is designed to be used with AI clients like Windsurf, Cursor, or Claude Desktop.
-See the main project README for full documentation.
+## Environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GODOT_MCP_TOKEN` | (none) | Auth token for the editor bridge. If unset, read from `godot_mcp_config.json` under `GODOT_PROJECT_PATH`. |
+| `GODOT_PROJECT_PATH` | cwd | Godot project root. Also the jail for direct file tools. |
+| `GDAI_MCP_SERVER_PORT` | 3571 | Port the editor plugin listens on. |
+| `GODOT_HOST` | 127.0.0.1 | Host of the editor bridge. Leave it alone. |
+| `GODOT_EXECUTABLE` | (none) | Path to the Godot binary, needed only by `launch_godot` and `get_godot_version`. |
+
+## Run it manually
+
+MCP clients start the server themselves, but for a smoke test:
+
+```bash
+GODOT_PROJECT_PATH=/path/to/your/game python -m mcp_server
+```
+
+Then check the bridge with:
+
+```bash
+GODOT_MCP_TOKEN=<token> python test_connection.py
+```

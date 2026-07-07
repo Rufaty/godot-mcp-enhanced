@@ -62,8 +62,9 @@ func view_script(params: Dictionary) -> Dictionary:
 	"""View and activate a script in the editor"""
 	var script_path = params.get("script_path", "")
 	
-	if not script_path.begins_with("res://"):
-		script_path = "res://" + script_path
+	script_path = _safe_path(script_path)
+	if script_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid script path"}
 	
 	if not FileAccess.file_exists(script_path):
 		return {"success": false, "error": "Script not found: " + script_path}
@@ -87,8 +88,9 @@ func create_script(params: Dictionary) -> Dictionary:
 	var content = params.get("content", "extends Node\n\n\nfunc _ready() -> void:\n\tpass\n")
 	var base_type = params.get("base_type", "Node")
 	
-	if not script_path.begins_with("res://"):
-		script_path = "res://" + script_path
+	script_path = _safe_path(script_path)
+	if script_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid script path"}
 	
 	if not script_path.ends_with(".gd"):
 		script_path += ".gd"
@@ -129,8 +131,9 @@ func attach_script(params: Dictionary) -> Dictionary:
 	var node_path = params.get("node_path", "")
 	var script_path = params.get("script_path", "")
 	
-	if not script_path.begins_with("res://"):
-		script_path = "res://" + script_path
+	script_path = _safe_path(script_path)
+	if script_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid script path"}
 	
 	# Get current scene root
 	var root = editor_interface.get_edited_scene_root()
@@ -164,8 +167,9 @@ func edit_file(params: Dictionary) -> Dictionary:
 	var replace_text = params.get("replace", "")
 	var regex_mode = params.get("regex", false)
 	
-	if not file_path.begins_with("res://"):
-		file_path = "res://" + file_path
+	file_path = _safe_path(file_path)
+	if file_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid file path"}
 	
 	if not FileAccess.file_exists(file_path):
 		return {"success": false, "error": "File not found: " + file_path}
@@ -269,8 +273,9 @@ func validate_gdscript_syntax(code: String) -> Dictionary:
 
 func get_script_methods(script_path: String) -> Dictionary:
 	"""Get list of methods defined in a script (Windsurf feature for context)"""
-	if not script_path.begins_with("res://"):
-		script_path = "res://" + script_path
+	script_path = _safe_path(script_path)
+	if script_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid script path"}
 	
 	if not FileAccess.file_exists(script_path):
 		return {"success": false, "error": "Script not found: " + script_path}
@@ -292,8 +297,9 @@ func get_script_methods(script_path: String) -> Dictionary:
 
 func get_script_properties(script_path: String) -> Dictionary:
 	"""Get list of properties defined in a script"""
-	if not script_path.begins_with("res://"):
-		script_path = "res://" + script_path
+	script_path = _safe_path(script_path)
+	if script_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid script path"}
 	
 	if not FileAccess.file_exists(script_path):
 		return {"success": false, "error": "Script not found: " + script_path}
@@ -343,3 +349,17 @@ func format_gdscript(code: String) -> Dictionary:
 	var formatted_code = "\n".join(formatted_lines)
 	
 	return {"success": true, "data": {"formatted_code": formatted_code}}
+
+
+## Normalizes a project path and refuses anything that escapes res://.
+## Returns an empty string when the path is unsafe.
+func _safe_path(raw_path: String) -> String:
+	var path := raw_path.strip_edges()
+	if path.is_empty():
+		return ""
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	path = path.simplify_path()
+	if not path.begins_with("res://") or ".." in path:
+		return ""
+	return path

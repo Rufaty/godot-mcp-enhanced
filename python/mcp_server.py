@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Godot MCP Enhanced Server
-A comprehensive MCP server for Godot Engine with advanced features for Windsurf AI
+"""MCP server that bridges AI clients to a running Godot 4 editor.
+
+Proxies tool calls over authenticated HTTP to the companion editor plugin.
+Works with any MCP client: Claude Desktop, Cursor, Windsurf, Kiro, and others.
 """
 
 import asyncio
@@ -21,7 +22,47 @@ from mcp.types import (
 # Configuration
 GODOT_HOST = os.getenv("GODOT_HOST", "127.0.0.1")
 GODOT_PORT = int(os.getenv("GDAI_MCP_SERVER_PORT", "3571"))
-GODOT_BASE_URL = f"http://{GODOT_HOST}:{GODOT_PORT}"
+GODOT_BASE_URL = "http://" + GODOT_HOST + ":" + str(GODOT_PORT)
+GODOT_PROJECT_PATH = os.getenv("GODOT_PROJECT_PATH", "")
+
+
+def _load_token() -> str:
+    """Prefer GODOT_MCP_TOKEN; otherwise read the token the Godot plugin
+    wrote into godot_mcp_config.json at the project root."""
+    env_token = os.getenv("GODOT_MCP_TOKEN", "")
+    if env_token:
+        return env_token
+    if GODOT_PROJECT_PATH:
+        config_file = os.path.join(GODOT_PROJECT_PATH, "godot_mcp_config.json")
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                return str(json.load(f).get("GDAI_MCP_TOKEN", ""))
+        except (OSError, ValueError):
+            pass
+    return ""
+
+
+_AUTH_TOKEN = _load_token()
+
+
+def _resolve_in_project(raw_path: str) -> str:
+    """Map a res:// or relative path to an absolute path inside the project.
+
+    Raises ValueError when the result would land outside the project root.
+    The root comes from GODOT_PROJECT_PATH and falls back to the current
+    working directory.
+    """
+    root = os.path.realpath(GODOT_PROJECT_PATH or os.getcwd())
+    path = raw_path.strip()
+    if path.startswith("res://"):
+        path = path[len("res://"):]
+    if os.path.isabs(path):
+        candidate = os.path.realpath(path)
+    else:
+        candidate = os.path.realpath(os.path.join(root, path))
+    if candidate != root and not candidate.startswith(root + os.sep):
+        raise ValueError("Path escapes the project root: " + raw_path)
+    return candidate
 
 # Initialize MCP server
 app = Server("godot-mcp-enhanced")
@@ -43,15 +84,24 @@ def _make_response(data: dict) -> list[TextContent]:
     return [TextContent(type="text", text=json.dumps(data, indent=2))]
 
 
-async def call_godot_api(endpoint: str, params: dict = None) -> dict:
+async def call_godot_api(endpoint: str, params: Optional[dict] = None) -> dict:
     """
     Call Godot HTTP API endpoint with error handling
     """
     url = f"{GODOT_BASE_URL}{endpoint}"
     
+    if not _AUTH_TOKEN:
+        return dict(success=False, error=(
+            "No auth token. Set GODOT_MCP_TOKEN, or set GODOT_PROJECT_PATH "
+            "so the token can be read from godot_mcp_config.json."))
+    
     try:
         client = await _get_http_client()
-        response = await client.post(url, json=params or {})
+        response = await client.post(
+            url,
+            json=params or {},
+            headers=dict([("X-MCP-Token", _AUTH_TOKEN)]),
+        )
         response.raise_for_status()
         return response.json()
     except httpx.HTTPError as e:
@@ -565,10 +615,10 @@ async def list_tools() -> list[Tool]:
             }
         ),
         
-        # Windsurf-Specific Tools
+        # Editor Context Tools
         Tool(
-            name="get_windsurf_context",
-            description="Get comprehensive context about the current Godot project state for AI understanding",
+            name="get_editor_context",
+            description="Get a summary of the current editor state: open scene, open scripts, recent errors, project structure",
             inputSchema={
                 "type": "object",
                 "properties": {},
@@ -577,11 +627,42 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="get_live_preview",
-            description="Get live preview including screenshot, scene tree, and current script for Windsurf",
+            description="Get a live snapshot: editor screenshot, compact scene tree, and the active script",
             inputSchema={
                 "type": "object",
                 "properties": {},
                 "required": []
+            }
+        ),
+        
+        # Asset Tools (Godot 4.x import pipeline)
+        Tool(
+            name="reimport_assets",
+            description="Reimport specific assets through the editor import pipeline. Use after changing source files (textures, audio, models) outside the editor.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "paths": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "res:// paths of the assets to reimport"
+                    }
+                },
+                "required": ["paths"]
+            }
+        ),
+        Tool(
+            name="get_import_info",
+            description="Read an asset .import sidecar: importer type, resource type, UID, and import parameters",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "asset_path": {
+                        "type": "string",
+                        "description": "res:// path of the imported asset"
+                    }
+                },
+                "required": ["asset_path"]
             }
         ),
         
@@ -970,9 +1051,13 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         "execute_editor_script": "/api/editor/execute_script",
         "clear_output_logs": "/api/editor/clear_logs",
         
-        # Windsurf tools
-        "get_windsurf_context": "/api/windsurf/context",
-        "get_live_preview": "/api/windsurf/live_preview",
+        # Editor context tools
+        "get_editor_context": "/api/context/summary",
+        "get_live_preview": "/api/context/live_preview",
+        
+        # Asset tools
+        "reimport_assets": "/api/asset/reimport",
+        "get_import_info": "/api/asset/import_info",
         
         # Runtime operations
         "simulate_key_press": "/api/runtime/simulate_key",
@@ -996,7 +1081,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
     if name == "check_godot_running":
         try:
             client = await _get_http_client()
-            response = await client.get(f"{GODOT_BASE_URL}/api/project/info", timeout=2.0)
+            response = await client.get(f"{GODOT_BASE_URL}/api/project/info", headers=dict([("X-MCP-Token", _AUTH_TOKEN)]), timeout=2.0)
             return _make_response({
                 "success": True,
                 "running": True,
@@ -1078,8 +1163,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         
         if name == "read_scene_file":
             scene_path = arguments.get("scene_path", "")
-            if scene_path.startswith("res://"):
-                scene_path = scene_path.replace("res://", "./")
+            try:
+                scene_path = _resolve_in_project(scene_path)
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 with open(scene_path, 'r', encoding='utf-8') as f:
@@ -1092,8 +1179,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             scene_path = arguments.get("scene_path", "")
             content = arguments.get("content", "")
             
-            if scene_path.startswith("res://"):
-                scene_path = scene_path.replace("res://", "./")
+            try:
+                scene_path = _resolve_in_project(scene_path)
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 os.makedirs(os.path.dirname(scene_path) if os.path.dirname(scene_path) else ".", exist_ok=True)
@@ -1105,8 +1194,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         
         elif name == "read_script_file":
             script_path = arguments.get("script_path", "")
-            if script_path.startswith("res://"):
-                script_path = script_path.replace("res://", "./")
+            try:
+                script_path = _resolve_in_project(script_path)
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 with open(script_path, 'r', encoding='utf-8') as f:
@@ -1119,8 +1210,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             script_path = arguments.get("script_path", "")
             content = arguments.get("content", "")
             
-            if script_path.startswith("res://"):
-                script_path = script_path.replace("res://", "./")
+            try:
+                script_path = _resolve_in_project(script_path)
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 os.makedirs(os.path.dirname(script_path) if os.path.dirname(script_path) else ".", exist_ok=True)
@@ -1132,7 +1225,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         
         elif name == "read_project_settings":
             project_path = arguments.get("project_path", ".")
-            settings_file = os.path.join(project_path, "project.godot")
+            try:
+                settings_file = _resolve_in_project(os.path.join(project_path, "project.godot"))
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 with open(settings_file, 'r', encoding='utf-8') as f:
@@ -1144,7 +1240,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         elif name == "update_project_settings":
             project_path = arguments.get("project_path", ".")
             settings = arguments.get("settings", {})
-            settings_file = os.path.join(project_path, "project.godot")
+            try:
+                settings_file = _resolve_in_project(os.path.join(project_path, "project.godot"))
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 with open(settings_file, 'r', encoding='utf-8') as f:
@@ -1169,8 +1268,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
         
         elif name == "create_directory":
             dir_path = arguments.get("dir_path", "")
-            if dir_path.startswith("res://"):
-                dir_path = dir_path.replace("res://", "./")
+            try:
+                dir_path = _resolve_in_project(dir_path)
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 os.makedirs(dir_path, exist_ok=True)
@@ -1182,8 +1283,10 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
             dir_path = arguments.get("dir_path", ".")
             recursive = arguments.get("recursive", False)
             
-            if dir_path.startswith("res://"):
-                dir_path = dir_path.replace("res://", "./")
+            try:
+                dir_path = _resolve_in_project(dir_path)
+            except ValueError as e:
+                return _make_response(dict(success=False, error=str(e)))
             
             try:
                 if recursive:

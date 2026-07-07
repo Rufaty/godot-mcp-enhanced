@@ -31,11 +31,13 @@ venv/
 ENV/
 uv.lock
 
-# Screenshots
-user://mcp_screenshots/
+# Screenshots land in user://, outside the repo. Nothing to ignore for them.
 
-# Config
+# Local config. Holds the generated auth token, so it must stay out of git.
 godot_mcp_config.json
+
+# Do NOT ignore *.uid files. Godot 4.4+ uses them to keep script and shader
+# references stable. Commit them and move them together with their files.
 
 # IDE
 .vscode/

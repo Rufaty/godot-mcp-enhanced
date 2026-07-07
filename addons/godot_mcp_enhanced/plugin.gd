@@ -39,17 +39,17 @@ func _enter_tree() -> void:
 	
 	scene_operations = SceneOperations.new()
 	scene_operations.name = "MCPSceneOperations"
-	scene_operations.editor_interface = get_editor_interface()
+	scene_operations.editor_interface = EditorInterface
 	add_child(scene_operations)
 	
 	script_operations = ScriptOperations.new()
 	script_operations.name = "MCPScriptOperations"
-	script_operations.editor_interface = get_editor_interface()
+	script_operations.editor_interface = EditorInterface
 	add_child(script_operations)
 	
 	debugger_integration = DebuggerIntegration.new()
 	debugger_integration.name = "MCPDebuggerIntegration"
-	debugger_integration.editor_interface = get_editor_interface()
+	debugger_integration.editor_interface = EditorInterface
 	add_child(debugger_integration)
 	
 	file_operations = FileOperations.new()
@@ -58,7 +58,7 @@ func _enter_tree() -> void:
 	
 	runtime_operations = RuntimeOperations.new()
 	runtime_operations.name = "MCPRuntimeOperations"
-	runtime_operations.editor_interface = get_editor_interface()
+	runtime_operations.editor_interface = EditorInterface
 	add_child(runtime_operations)
 	
 	# Connect HTTP server to operation handlers
@@ -71,7 +71,7 @@ func _enter_tree() -> void:
 	var port = int(config.get("GDAI_MCP_SERVER_PORT", 3571))
 	print("[Godot MCP Enhanced] Attempting to start HTTP server on port %d..." % port)
 	
-	var success = http_server.start_server(port)
+	var success = http_server.start_server(port, str(config.get("GDAI_MCP_TOKEN", "")))
 	
 	if success:
 		print("[Godot MCP Enhanced] ✓ HTTP Server started successfully on port %d" % port)
@@ -128,12 +128,23 @@ func _load_config() -> void:
 		# Create default config
 		config = {
 			"GDAI_MCP_SERVER_PORT": "3571",
-			"GDAI_RUNTIME_SERVER_PORT": "3572",
 			"AUTO_SCREENSHOT": true,
 			"SCREENSHOT_ON_SCENE_CHANGE": true,
 			"SCREENSHOT_ON_ERROR": true
 		}
 		_save_config()
+	
+	# Auth token: generated once, stored in the config file (which is gitignored).
+	# Every request to the HTTP bridge must present it.
+	if str(config.get("GDAI_MCP_TOKEN", "")).is_empty():
+		config["GDAI_MCP_TOKEN"] = _generate_token()
+		_save_config()
+		print("[Godot MCP Enhanced] Generated new auth token in ", config_path)
+
+
+func _generate_token() -> String:
+	var crypto := Crypto.new()
+	return crypto.generate_random_bytes(32).hex_encode()
 
 
 func _save_config() -> void:
@@ -201,8 +212,15 @@ func _setup_http_routes() -> void:
 	http_server.register_route("/api/runtime/run_test_script", _handle_run_test_script)
 	http_server.register_route("/api/runtime/get_input_actions", _handle_get_input_actions)
 	
-	# Windsurf-specific tools
-	http_server.register_route("/api/windsurf/context", _handle_get_windsurf_context)
+	# Asset tools
+	http_server.register_route("/api/asset/reimport", _handle_reimport_assets)
+	http_server.register_route("/api/asset/import_info", _handle_get_import_info)
+	
+	# Editor context tools (kept under the old /api/windsurf/* paths too, so
+	# existing clients keep working)
+	http_server.register_route("/api/context/summary", _handle_get_editor_context)
+	http_server.register_route("/api/context/live_preview", _handle_get_live_preview)
+	http_server.register_route("/api/windsurf/context", _handle_get_editor_context)
 	http_server.register_route("/api/windsurf/live_preview", _handle_get_live_preview)
 
 
@@ -448,19 +466,31 @@ func _handle_get_input_actions(params: Dictionary) -> Dictionary:
 	return runtime_operations.get_input_actions()
 
 
-# Windsurf-specific handlers
-func _handle_get_windsurf_context(params: Dictionary) -> Dictionary:
+# Editor context handlers
+func _handle_get_editor_context(params: Dictionary) -> Dictionary:
+	var scene_root = EditorInterface.get_edited_scene_root()
 	var context = {
-		"current_scene": get_editor_interface().get_edited_scene_root().get_name() if get_editor_interface().get_edited_scene_root() else null,
+		"current_scene": scene_root.get_name() if scene_root else null,
 		"open_scripts": script_operations.get_open_script_names(),
 		"recent_errors": debugger_integration.get_recent_errors(5),
 		"project_structure": file_operations.get_quick_project_overview(),
 		"editor_state": {
-			"playing": get_editor_interface().is_playing_scene(),
-			"distraction_free": get_editor_interface().is_distraction_free_mode_enabled()
+			"playing": EditorInterface.is_playing_scene(),
+			"distraction_free": EditorInterface.is_distraction_free_mode_enabled()
 		}
 	}
 	return {"success": true, "data": context}
+
+
+# Asset handlers
+func _handle_reimport_assets(params: Dictionary) -> Dictionary:
+	var paths = params.get("paths", [])
+	return file_operations.reimport_assets(paths)
+
+
+func _handle_get_import_info(params: Dictionary) -> Dictionary:
+	var asset_path = params.get("asset_path", "")
+	return file_operations.get_import_info(asset_path)
 
 
 func _handle_get_live_preview(params: Dictionary) -> Dictionary:
@@ -494,7 +524,7 @@ func _on_server_restart_requested() -> void:
 	var port = int(config.get("GDAI_MCP_SERVER_PORT", 3571))
 	print("[Godot MCP Enhanced] Starting server on port %d..." % port)
 	
-	var success = http_server.start_server(port)
+	var success = http_server.start_server(port, str(config.get("GDAI_MCP_TOKEN", "")))
 	
 	if success:
 		print("[Godot MCP Enhanced] ✓ Server restarted successfully on port %d" % port)

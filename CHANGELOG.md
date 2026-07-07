@@ -1,207 +1,43 @@
 # Changelog
 
-All notable changes to Godot MCP Enhanced will be documented in this file.
+## 2.0.0 (2026-07-07)
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
----
-
-## [1.0.0] - 2025-01-15
-
-### 🎉 Major Release - Runtime Operations & Multi-CLI Support
-
-This release transforms Godot MCP Enhanced into a comprehensive AI-assisted game development platform with 62+ tools and support for 8+ AI clients.
-
-### Added
-
-#### Runtime Operations (11 New Tools)
-- **`simulate_key_press`** - Simulate keyboard input for testing
-- **`simulate_action`** - Simulate input actions (jump, move, etc.)
-- **`get_runtime_stats`** - Real-time performance monitoring (FPS, memory, draw calls)
-- **`get_node_properties`** - Inspect node properties during gameplay
-- **`call_node_method`** - Call methods on nodes for testing
-- **`get_installed_plugins`** - Detect all installed Godot plugins
-- **`get_plugin_info`** - Get detailed plugin information
-- **`get_assets_by_type`** - Discover project assets (textures, models, audio, etc.)
-- **`get_asset_info`** - Get detailed asset information
-- **`run_test_script`** - Execute automated test scripts
-- **`get_input_actions`** - List all registered input actions
-
-#### Asset Discovery System
-- Automatic detection of textures, 3D models, audio files, scripts, scenes
-- Support for PNG, JPG, SVG, GLB, GLTF, OBJ, FBX, WAV, OGG, MP3
-- Detailed asset metadata (size, format, type)
-- AI can now use project assets automatically
-
-#### Plugin Integration System
-- Automatic plugin detection in `addons/` directory
-- Plugin metadata parsing from `plugin.cfg`
-- Plugin node discovery
-- AI can use plugin features automatically
-
-#### Input Simulation System
-- Keyboard key press/release simulation
-- Input action simulation with strength control
-- Mouse button and motion simulation
-- Support for all Godot keycodes and actions
-
-#### Performance Monitoring
-- Real-time FPS tracking
-- Memory usage (static and dynamic)
-- Draw call counting
-- Vertex and surface change tracking
-- Material and shader change monitoring
-
-#### Multi-CLI Support
-- **Kiro IDE** - Full support with optimized configuration
-- **Claude Code CLI** - Complete setup guide
-- **Gemini CLI** - Full integration
-- **Cursor** - MCP configuration
-- **Windsurf** - Enhanced support
-- **Aider** - CLI integration
-- **Continue** - Full compatibility
-- **Generic MCP CLIs** - Universal support
-
-#### Documentation
-- **`docs/RUNTIME_FEATURES.md`** - Comprehensive runtime operations guide
-- **`docs/CLI_SETUP.md`** - Setup guides for all supported CLIs
-- **`docs/KIRO_SETUP.md`** - Kiro IDE specific guide
-- **`AI_INSTRUCTIONS.md`** - 900+ lines of AI guidance with runtime operations
-- **`docs/EXAMPLES.md`** - Real-world usage examples
-- **`CONTRIBUTING.md`** - Contribution guidelines
-- **`CODE_OF_CONDUCT.md`** - Community guidelines
-
-### Changed
-
-- **Tool Count**: Increased from 51 to 62+ tools
-- **AI Instructions**: Expanded from 450 to 900+ lines
-- **Documentation**: Reorganized and consolidated for clarity
-- **README**: Complete rewrite with modern structure
-- **Performance**: Optimized HTTP request handling
-
-### Improved
-
-- **Asset-Aware Development**: AI can now discover and use all project assets
-- **Plugin Compatibility**: Works with any installed Godot plugin
-- **Testing Capabilities**: Automated gameplay testing with input simulation
-- **Debugging**: Runtime inspection and method calling
-- **Performance**: Real-time monitoring and optimization
-- **Documentation**: Comprehensive guides for all features
+Rewrite release after four months of abandonment. The headline: version 1.0's Python server could not talk to Godot at all because of a malformed URL template, and the HTTP server was open to any process or web page on the machine. Both are fixed, along with most of what surrounded them.
 
 ### Fixed
 
-- HTTP route registration for runtime operations
-- Endpoint mapping in Python MCP server
-- Tool definitions for new runtime features
-- Documentation cross-references
+- Python server base URL was built as `{http://127.0.0.1}:3571`, so every API call failed with a connection error. This also affected `test_connection.py`.
+- HTTP requests were read in one chunk without honoring Content-Length. Large or slow bodies were silently truncated. The server now buffers per client until the full body arrives.
+- Deleting or renaming files left `.uid` and `.import` sidecars behind, which produces invalid-UID warnings and broken references in Godot 4.4+. Sidecars now move and delete together with their file.
+- `EditorInterface` is used as the singleton it has been since Godot 4.2 instead of the deprecated `get_editor_interface()` call.
+
+### Security
+
+- All HTTP endpoints now require a generated auth token (`X-MCP-Token` header). The token lives in `godot_mcp_config.json`, which is gitignored.
+- Host header must be loopback and requests carrying an Origin header are refused. Together this blocks DNS rebinding and drive-by requests from web pages.
+- Removed the `Access-Control-Allow-Origin: *` header.
+- GDScript file operations reject paths that escape `res://`. Python direct-file tools are confined to `GODOT_PROJECT_PATH`; they previously accepted any absolute path on disk.
+- Request bodies capped at 8 MiB with a 10 second per-client timeout.
+
+### Added
+
+- `reimport_assets`: push changed source assets (textures, audio, models) through the editor import pipeline.
+- `get_import_info`: read an asset's `.import` sidecar, including importer type, UID, and import parameters.
+- `SECURITY.md` with the actual threat model.
+- The bottom panel's copy-config button now emits a complete client config: port, token, and project path.
+
+### Changed
+
+- `get_windsurf_context` renamed to `get_editor_context`. New `/api/context/*` routes; the old `/api/windsurf/*` routes remain as aliases.
+- Plugin and Python package versions bumped to 2.0.0; plugin metadata now names a real author and states the supported Godot range (4.4+, tested on 4.7).
+- HTTP server logging cut down to what helps: start, stop, errors. The poll counters and debug timers are gone.
+- `.gitignore` no longer contains a `user://` path (git cannot ignore what is not in the repo) and now documents why `.uid` files must be committed.
 
 ### Removed
 
-- Duplicate files (`AI_INSTRUCTIONS_OPTIMIZED.md`, `mcp_server_optimized.py`)
-- Redundant documentation (`docs/OPTIMIZATION.md`, `docs/AI_INSTRUCTIONS_GUIDE.md`)
-- Obsolete test files (`test_godot_connection.py`)
+- `studio/Unsloth_Studio_Colab.ipynb`, an unrelated LLM fine-tuning notebook.
+- The unused `GDAI_RUNTIME_SERVER_PORT` config key.
 
----
+## 1.0.0 (2026-03)
 
-## [0.9.0] - 2024-12-20
-
-### Added
-
-- Initial public release
-- 51 core tools for Godot integration
-- Scene and node operations
-- Script management
-- Debugging and error tracking
-- Screenshot system
-- File operations
-- Project management
-- Windsurf AI optimization
-- Cursor support
-- Claude Desktop support
-
-### Features
-
-- Real-time editor integration
-- HTTP REST API (port 3571)
-- Python MCP server
-- Godot EditorPlugin
-- Auto-screenshot on changes
-- Error tracking system
-- Performance monitoring basics
-- Live scene tree inspection
-
----
-
-## [0.8.0] - 2024-12-10
-
-### Added
-
-- Beta release for testing
-- Core MCP protocol implementation
-- Basic Godot integration
-- Scene operations
-- Node manipulation
-- Script editing
-
----
-
-## [0.5.0] - 2024-11-25
-
-### Added
-
-- Alpha release
-- Proof of concept
-- Basic HTTP server
-- Simple tool set
-- Initial documentation
-
----
-
-## Upgrade Guide
-
-### From 0.9.0 to 1.0.0
-
-1. **Update Plugin**:
-   - Replace `addons/godot_mcp_enhanced/` with new version
-   - Restart Godot
-   - Verify "Server Running" in MCP Enhanced tab
-
-2. **Update Python Server**:
-   ```bash
-   cd python
-   git pull
-   uv pip install -e .
-   ```
-
-3. **Update MCP Configuration**:
-   - No changes needed for existing configs
-   - New tools are automatically available
-
-4. **New Features Available**:
-   - Try `@godot get_assets_by_type asset_type="texture"`
-   - Try `@godot get_installed_plugins`
-   - Try `@godot simulate_action action_name="jump"`
-   - Try `@godot get_runtime_stats`
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute to this project.
-
----
-
-## Links
-
-- **Repository**: https://github.com/Rufaty/godot-mcp-enhanced
-- **Issues**: https://github.com/Rufaty/godot-mcp-enhanced/issues
-- **Discussions**: https://github.com/Rufaty/godot-mcp-enhanced/discussions
-- **Documentation**: [docs/](docs/)
-
----
-
-[1.0.0]: https://github.com/Rufaty/godot-mcp-enhanced/releases/tag/v1.0.0
-[0.9.0]: https://github.com/Rufaty/godot-mcp-enhanced/releases/tag/v0.9.0
-[0.8.0]: https://github.com/Rufaty/godot-mcp-enhanced/releases/tag/v0.8.0
-[0.5.0]: https://github.com/Rufaty/godot-mcp-enhanced/releases/tag/v0.5.0
+Initial release.

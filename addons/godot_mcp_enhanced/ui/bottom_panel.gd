@@ -112,7 +112,8 @@ func _on_test_pressed() -> void:
 	var port = current_config.get("GDAI_MCP_SERVER_PORT", "3571")
 	print("[MCP Enhanced] Port: " + str(port))
 	
-	var url = "http://127.0.0.1:" + str(port) + "/project_info"
+	var token = str(current_config.get("GDAI_MCP_TOKEN", ""))
+	var url = "http://127.0.0.1:" + str(port) + "/api/project/info?token=" + token
 	print("[MCP Enhanced] Test URL: " + url)
 	print("[MCP Enhanced] ")
 	print("[MCP Enhanced] If browser shows 'Connection Refused':")
@@ -129,13 +130,19 @@ func _copy_mcp_config(ide_name: String) -> void:
 	var python_path = "path/to/python/.venv/Scripts/python.exe"  # User needs to update
 	var cwd_path = "path/to/godot-mcp-enhanced/python"  # User needs to update
 	
+	var env = {
+		"GDAI_MCP_SERVER_PORT": str(current_config.get("GDAI_MCP_SERVER_PORT", "3571")),
+		"GODOT_MCP_TOKEN": str(current_config.get("GDAI_MCP_TOKEN", "")),
+		"GODOT_PROJECT_PATH": ProjectSettings.globalize_path("res://"),
+	}
+	
 	var mcp_config = {
 		"mcpServers": {
 			"godot-mcp-enhanced": {
 				"command": python_path,
 				"args": ["-m", "mcp_server"],
 				"cwd": cwd_path,
-				"env": current_config
+				"env": env
 			}
 		}
 	}
@@ -171,11 +178,11 @@ func _on_github_pressed() -> void:
 
 
 func _on_kiro_guide_pressed() -> void:
-	OS.shell_open("https://github.com/Rufaty/godot-mcp-enhanced/blob/main/docs/KIRO_SETUP.md")
+	OS.shell_open("https://github.com/Rufaty/godot-mcp-enhanced/blob/main/INSTALLATION.md")
 
 
 func _on_windsurf_guide_pressed() -> void:
-	OS.shell_open("https://github.com/Rufaty/godot-mcp-enhanced/blob/main/docs/WINDSURF_SETUP.md")
+	OS.shell_open("https://github.com/Rufaty/godot-mcp-enhanced/blob/main/QUICKSTART.md")
 
 
 func _on_ai_instructions_pressed() -> void:

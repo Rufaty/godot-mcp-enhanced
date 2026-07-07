@@ -5,6 +5,7 @@ Run this to ensure everything is working correctly
 """
 
 import asyncio
+import os
 import sys
 import httpx
 from rich.console import Console
@@ -14,15 +15,21 @@ from rich import print as rprint
 
 console = Console()
 
-GODOT_HOST = "127.0.0.1"
-GODOT_PORT = 3571
-BASE_URL = f"http://{GODOT_HOST}:{GODOT_PORT}"
+GODOT_HOST = os.getenv("GODOT_HOST", "127.0.0.1")
+GODOT_PORT = int(os.getenv("GDAI_MCP_SERVER_PORT", "3571"))
+BASE_URL = "http://" + GODOT_HOST + ":" + str(GODOT_PORT)
+AUTH_TOKEN = os.getenv("GODOT_MCP_TOKEN", "")
 
 
 async def test_endpoint(client: httpx.AsyncClient, name: str, endpoint: str, params: dict = None) -> dict:
     """Test a single endpoint"""
     try:
-        response = await client.post(f"{BASE_URL}{endpoint}", json=params or {}, timeout=5.0)
+        response = await client.post(
+            f"{BASE_URL}{endpoint}",
+            json=params or dict(),
+            headers=dict([("X-MCP-Token", AUTH_TOKEN)]),
+            timeout=5.0,
+        )
         response.raise_for_status()
         data = response.json()
         return {"name": name, "status": "✅ PASS", "response": data.get("success", False)}

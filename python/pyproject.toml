@@ -1,7 +1,7 @@
 [project]
 name = "godot-mcp-enhanced"
-version = "1.0.0"
-description = "Enhanced Model Context Protocol server for Godot Engine with advanced features for Windsurf AI"
+version = "2.0.0"
+description = "MCP server that bridges AI clients to a running Godot 4 editor"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-server = "mcp_server:main_entry"  # Changed from :main to :main_entry
+mcp-server = "mcp_server:main_entry"
 
 [build-system]
 requires = ["hatchling"]

@@ -4,6 +4,85 @@ extends Node
 signal file_system_changed()
 
 
+## Normalizes a project path and refuses anything that escapes res://.
+## Returns an empty string when the path is unsafe.
+func _safe_project_path(raw_path: String) -> String:
+	var path := raw_path.strip_edges()
+	if path.is_empty():
+		return ""
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	# simplify_path collapses ".." and "." segments; if any survive, or the
+	# result no longer sits under res://, reject it.
+	path = path.simplify_path()
+	if not path.begins_with("res://") or ".." in path:
+		return ""
+	return path
+
+
+## Removes Godot sidecar files (.uid since 4.4, .import for imported assets)
+## that belong to a deleted file. Leaving them behind produces
+## "invalid UID" warnings on the next editor start.
+func _remove_sidecars(file_path: String) -> Array:
+	var removed := []
+	var dir = DirAccess.open("res://")
+	for suffix in [".uid", ".import"]:
+		var sidecar: String = file_path + suffix
+		if FileAccess.file_exists(sidecar):
+			if dir.remove(sidecar) == OK:
+				removed.append(sidecar)
+	return removed
+
+
+## Ask the editor to reimport specific assets. Wraps
+## EditorFileSystem.reimport_files, which is how the 4.x import
+## pipeline refreshes textures, audio, and models after external edits.
+func reimport_assets(paths: Array) -> Dictionary:
+	var safe_paths := PackedStringArray()
+	for p in paths:
+		var safe := _safe_project_path(str(p))
+		if safe.is_empty():
+			return {"success": false, "error": "Unsafe or invalid path: " + str(p)}
+		if not FileAccess.file_exists(safe):
+			return {"success": false, "error": "File not found: " + safe}
+		safe_paths.append(safe)
+	
+	if safe_paths.is_empty():
+		return {"success": false, "error": "No paths given"}
+	
+	var fs := EditorInterface.get_resource_filesystem()
+	fs.reimport_files(safe_paths)
+	return {"success": true, "data": {"reimported": safe_paths}}
+
+
+## Reads the .import sidecar of an asset so a client can inspect importer
+## type and settings without parsing the file itself.
+func get_import_info(asset_path: String) -> Dictionary:
+	var safe := _safe_project_path(asset_path)
+	if safe.is_empty():
+		return {"success": false, "error": "Unsafe or invalid path: " + asset_path}
+	
+	var import_path := safe + ".import"
+	if not FileAccess.file_exists(import_path):
+		return {"success": false, "error": "No .import sidecar for " + safe + " (not an imported asset)"}
+	
+	var cfg := ConfigFile.new()
+	if cfg.load(import_path) != OK:
+		return {"success": false, "error": "Could not parse " + import_path}
+	
+	var info := {
+		"path": safe,
+		"importer": cfg.get_value("remap", "importer", ""),
+		"type": cfg.get_value("remap", "type", ""),
+		"uid": cfg.get_value("remap", "uid", ""),
+		"params": {}
+	}
+	if cfg.has_section("params"):
+		for key in cfg.get_section_keys("params"):
+			info["params"][key] = cfg.get_value("params", key)
+	return {"success": true, "data": info}
+
+
 func get_filesystem_tree(path: String = "res://", filters: Array = []) -> Dictionary:
 	"""Get recursive tree view of project filesystem"""
 	var tree = _build_directory_tree(path, filters)
@@ -266,8 +345,9 @@ func project_path_to_uid(path: String) -> String:
 
 func get_file_content(file_path: String) -> Dictionary:
 	"""Get content of a file"""
-	if not file_path.begins_with("res://"):
-		file_path = "res://" + file_path
+	file_path = _safe_project_path(file_path)
+	if file_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid path"}
 	
 	if not FileAccess.file_exists(file_path):
 		return {"success": false, "error": "File not found: " + file_path}
@@ -284,8 +364,9 @@ func get_file_content(file_path: String) -> Dictionary:
 
 func create_directory(dir_path: String) -> Dictionary:
 	"""Create a directory"""
-	if not dir_path.begins_with("res://"):
-		dir_path = "res://" + dir_path
+	dir_path = _safe_project_path(dir_path)
+	if dir_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid path"}
 	
 	var dir = DirAccess.open("res://")
 	if dir.dir_exists(dir_path):
@@ -300,9 +381,10 @@ func create_directory(dir_path: String) -> Dictionary:
 
 
 func delete_file(file_path: String) -> Dictionary:
-	"""Delete a file"""
-	if not file_path.begins_with("res://"):
-		file_path = "res://" + file_path
+	"""Delete a file plus its .uid/.import sidecars"""
+	file_path = _safe_project_path(file_path)
+	if file_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid path"}
 	
 	if not FileAccess.file_exists(file_path):
 		return {"success": false, "error": "File not found: " + file_path}
@@ -313,16 +395,18 @@ func delete_file(file_path: String) -> Dictionary:
 	if error != OK:
 		return {"success": false, "error": "Failed to delete file: " + error_string(error)}
 	
+	var removed_sidecars := _remove_sidecars(file_path)
+	
 	emit_signal("file_system_changed")
-	return {"success": true, "data": {"path": file_path}}
+	return {"success": true, "data": {"path": file_path, "removed_sidecars": removed_sidecars}}
 
 
 func rename_file(old_path: String, new_path: String) -> Dictionary:
-	"""Rename or move a file"""
-	if not old_path.begins_with("res://"):
-		old_path = "res://" + old_path
-	if not new_path.begins_with("res://"):
-		new_path = "res://" + new_path
+	"""Rename or move a file, carrying .uid/.import sidecars along"""
+	old_path = _safe_project_path(old_path)
+	new_path = _safe_project_path(new_path)
+	if old_path.is_empty() or new_path.is_empty():
+		return {"success": false, "error": "Unsafe or invalid path"}
 	
 	if not FileAccess.file_exists(old_path):
 		return {"success": false, "error": "File not found: " + old_path}
@@ -333,8 +417,17 @@ func rename_file(old_path: String, new_path: String) -> Dictionary:
 	if error != OK:
 		return {"success": false, "error": "Failed to rename file: " + error_string(error)}
 	
+	# Since Godot 4.4, scripts and shaders keep their identity through a .uid
+	# sidecar. Moving the file without the sidecar breaks references.
+	var moved_sidecars := []
+	for suffix in [".uid", ".import"]:
+		var old_sidecar: String = old_path + suffix
+		if FileAccess.file_exists(old_sidecar):
+			if dir.rename(old_sidecar, new_path + suffix) == OK:
+				moved_sidecars.append(new_path + suffix)
+	
 	emit_signal("file_system_changed")
-	return {"success": true, "data": {"old_path": old_path, "new_path": new_path}}
+	return {"success": true, "data": {"old_path": old_path, "new_path": new_path, "moved_sidecars": moved_sidecars}}
 
 
 func get_recent_files(count: int = 10) -> Array:
