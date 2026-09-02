@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The Python server pinned `mcp>=1.0.0` with no upper bound; today that resolves to mcp 2.x, whose API removed the decorators `mcp_server.py` uses, so a fresh `uv sync` produced a server that crashed on import. The dependency is now capped at `<2.0.0` and the server starts again.
+- `open_scene` returned `null` to clients: the handler called the scene-open coroutine without `await`, so the HTTP layer serialized the suspended call's `null` instead of a success/error result.
+- `update_project_settings` corrupted `project.godot`: it looked for full keys at any line and appended misses at the end of the file, and quoted every value, so numbers and booleans were stored as strings. It now edits within the right `[section]` and preserves the value type.
+- The auth token was read once at startup, so starting the MCP server before the plugin generated `godot_mcp_config.json` left every call unauthenticated until restart. The token now refreshes when the config file changes.
+- A running-scene screenshot requested within a second of an editor screenshot returned the cached editor image. Editor and running-scene captures now throttle independently and only reuse a cached capture of the same kind.
+- `launch_godot` and `check_godot_running` now fall back to `GODOT_PROJECT_PATH` / refresh the token, and a missing project path produces a clear error instead of a `TypeError` from `subprocess`.
+- Calls while Godot is not running now report an actionable "Cannot reach the Godot editor at http://…" error instead of a raw HTTP transport exception.
+
 ## 2.0.0 (2026-07-07)
 
 Rewrite release after four months of abandonment. The headline: version 1.0's Python server could not talk to Godot at all because of a malformed URL template, and the HTTP server was open to any process or web page on the machine. Both are fixed, along with most of what surrounded them.

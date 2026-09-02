@@ -8,7 +8,7 @@ Works with any MCP client: Claude Desktop, Cursor, Windsurf, Kiro, and others.
 import asyncio
 import json
 import os
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from mcp.server import Server
@@ -43,6 +43,29 @@ def _load_token() -> str:
 
 
 _AUTH_TOKEN = _load_token()
+_AUTH_TOKEN_MTIME: float | None = None
+
+
+def _get_auth_token() -> str:
+    """Return the auth token, refreshing it from godot_mcp_config.json when
+    the file changes. The plugin writes that file the first time the editor
+    loads, which can happen after this server has already started."""
+    global _AUTH_TOKEN, _AUTH_TOKEN_MTIME
+    env_token = os.getenv("GODOT_MCP_TOKEN", "")
+    if env_token:
+        return env_token
+    if not GODOT_PROJECT_PATH:
+        return _AUTH_TOKEN
+    config_file = os.path.join(GODOT_PROJECT_PATH, "godot_mcp_config.json")
+    try:
+        mtime = os.path.getmtime(config_file)
+        if mtime != _AUTH_TOKEN_MTIME:
+            with open(config_file, "r", encoding="utf-8") as f:
+                _AUTH_TOKEN = str(json.load(f).get("GDAI_MCP_TOKEN", ""))
+            _AUTH_TOKEN_MTIME = mtime
+    except (OSError, ValueError):
+        pass
+    return _AUTH_TOKEN
 
 
 def _resolve_in_project(raw_path: str) -> str:
@@ -64,11 +87,93 @@ def _resolve_in_project(raw_path: str) -> str:
         raise ValueError("Path escapes the project root: " + raw_path)
     return candidate
 
+
+def _format_setting_value(value: Any) -> str:
+    """Serialize a setting the way project.godot expects: numbers and
+    booleans unquoted, strings quoted."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    return '"' + str(value).replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _find_setting_line(lines: list[str], section: str, key: str) -> int | None:
+    """Index of the line holding `key` inside `section`, or None.
+
+    project.godot is INI-style: settings live under a "[section]" header with
+    the section prefix trimmed from the key (e.g. application/config/name is
+    "config/name=" under [application])."""
+    current_section = ""
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            current_section = stripped[1:-1].strip()
+            continue
+        if current_section.lower() != section.lower():
+            continue
+        if "=" not in line or stripped.startswith((";", "#")):
+            continue
+        if line.split("=", 1)[0].strip().lower() == key.lower():
+            return i
+    return None
+
+
+def _find_section_end(lines: list[str], section: str) -> int | None:
+    """Index of the next section header after `section`, or None when
+    `section` is the last (or missing) section in the file."""
+    current_section = ""
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if current_section.lower() == section.lower():
+                return i
+            current_section = stripped[1:-1].strip()
+    return None
+
+
+def _has_section(lines: list[str], section: str) -> bool:
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if stripped[1:-1].strip().lower() == section.lower():
+                return True
+    return False
+
+
+def _apply_settings(lines: list[str], settings: dict) -> list[str]:
+    """Apply fully qualified keys (e.g. "application/config/name") to
+    project.godot lines, preserving everything else. Missing keys are inserted
+    into their section, creating the section when needed."""
+    for full_key, value in settings.items():
+        if "/" not in full_key:
+            raise ValueError("Setting key must include a section: " + full_key)
+        section, key = full_key.split("/", 1)
+        formatted = _format_setting_value(value)
+
+        index = _find_setting_line(lines, section, key)
+        if index is not None:
+            # Keep the key exactly as written in the file; only swap the value.
+            existing_key = lines[index].split("=", 1)[0].rstrip()
+            lines[index] = f"{existing_key}={formatted}\n"
+            continue
+
+        insert_at = _find_section_end(lines, section)
+        if insert_at is None:
+            if not _has_section(lines, section):
+                if lines and lines[-1].strip() != "":
+                    lines.append("\n")
+                lines.append(f"[{section}]\n")
+            insert_at = len(lines)
+        lines.insert(insert_at, f"{key}={formatted}\n")
+    return lines
+
+
 # Initialize MCP server
 app = Server("godot-mcp-enhanced")
 
 # Persistent HTTP client for Godot API calls (reused across requests)
-_http_client: Optional[httpx.AsyncClient] = None
+_http_client: httpx.AsyncClient | None = None
 
 
 async def _get_http_client() -> httpx.AsyncClient:
@@ -84,26 +189,36 @@ def _make_response(data: dict) -> list[TextContent]:
     return [TextContent(type="text", text=json.dumps(data, indent=2))]
 
 
-async def call_godot_api(endpoint: str, params: Optional[dict] = None) -> dict:
+async def call_godot_api(endpoint: str, params: dict | None = None) -> dict:
     """
     Call Godot HTTP API endpoint with error handling
     """
     url = f"{GODOT_BASE_URL}{endpoint}"
-    
-    if not _AUTH_TOKEN:
+
+    token = _get_auth_token()
+    if not token:
         return dict(success=False, error=(
             "No auth token. Set GODOT_MCP_TOKEN, or set GODOT_PROJECT_PATH "
             "so the token can be read from godot_mcp_config.json."))
-    
+
     try:
         client = await _get_http_client()
         response = await client.post(
             url,
             json=params or {},
-            headers=dict([("X-MCP-Token", _AUTH_TOKEN)]),
+            headers=dict([("X-MCP-Token", token)]),
         )
         response.raise_for_status()
         return response.json()
+    except httpx.ConnectError:
+        return {
+            "success": False,
+            "error": (
+                f"Cannot reach the Godot editor at {GODOT_BASE_URL}. "
+                "Start Godot with your project open and the MCP Enhanced "
+                "plugin enabled, then try again."
+            )
+        }
     except httpx.HTTPError as e:
         return {
             "success": False,
@@ -1081,7 +1196,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
     if name == "check_godot_running":
         try:
             client = await _get_http_client()
-            response = await client.get(f"{GODOT_BASE_URL}/api/project/info", headers=dict([("X-MCP-Token", _AUTH_TOKEN)]), timeout=2.0)
+            response = await client.get(f"{GODOT_BASE_URL}/api/project/info", headers=dict([("X-MCP-Token", _get_auth_token())]), timeout=2.0)
             return _make_response({
                 "success": True,
                 "running": True,
@@ -1103,7 +1218,13 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
                 "error": "GODOT_EXECUTABLE environment variable not set. Please set it to your Godot executable path."
             })
         
-        project_path = arguments.get("project_path")
+        project_path = arguments.get("project_path") or GODOT_PROJECT_PATH
+        if not project_path:
+            return _make_response({
+                "success": False,
+                "error": "Missing project_path. Pass the path to the Godot project "
+                         "directory, or set GODOT_PROJECT_PATH."
+            })
         editor_mode = arguments.get("editor_mode", True)
         
         try:
@@ -1249,15 +1370,7 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent | ImageConten
                 with open(settings_file, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
                 
-                for key, value in settings.items():
-                    found = False
-                    for i, line in enumerate(lines):
-                        if line.startswith(key):
-                            lines[i] = f'{key}="{value}"\n'
-                            found = True
-                            break
-                    if not found:
-                        lines.append(f'{key}="{value}"\n')
+                lines = _apply_settings(lines, settings)
                 
                 with open(settings_file, 'w', encoding='utf-8') as f:
                     f.writelines(lines)
