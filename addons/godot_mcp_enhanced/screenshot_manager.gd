@@ -3,7 +3,8 @@ extends Node
 
 var screenshot_dir: String = "user://mcp_screenshots/"
 var auto_capture_enabled: bool = true
-var last_screenshot_time: int = 0
+var last_editor_screenshot_time: int = 0
+var last_running_screenshot_time: int = 0
 var min_screenshot_interval: int = 1000  # milliseconds
 
 signal screenshot_captured(path: String, base64_data: String)
@@ -22,12 +23,13 @@ func capture_editor_screenshot() -> String:
 	"""Capture the entire Godot editor window and return base64-encoded PNG"""
 	var current_time = Time.get_ticks_msec()
 	
-	# Throttle screenshots to prevent spam
-	if current_time - last_screenshot_time < min_screenshot_interval:
+	# Throttle screenshots to prevent spam. The cached fallback is filtered to
+	# editor captures so a running-scene request never gets this one.
+	if current_time - last_editor_screenshot_time < min_screenshot_interval:
 		push_warning("[Screenshot Manager] Throttling: Too soon since last screenshot")
-		return _get_cached_screenshot()
+		return _get_cached_screenshot("editor_")
 	
-	last_screenshot_time = current_time
+	last_editor_screenshot_time = current_time
 	
 	# Note: Editor window screenshot is not directly available in Godot 4.x
 	# We capture the main viewport instead, which shows the 3D/2D editor view
@@ -68,11 +70,11 @@ func capture_running_scene_screenshot() -> String:
 	
 	var current_time = Time.get_ticks_msec()
 	
-	if current_time - last_screenshot_time < min_screenshot_interval:
-		push_warning("[Screenshot Manager] Throttling: Too soon since last screenshot")
-		return _get_cached_screenshot()
+	if current_time - last_running_screenshot_time < min_screenshot_interval:
+		push_warning("[Screenshot Manager] Throttling: Too soon since last running scene screenshot")
+		return _get_cached_screenshot("running_scene_")
 	
-	last_screenshot_time = current_time
+	last_running_screenshot_time = current_time
 	
 	# Get the main viewport which contains the running scene
 	var viewport = Engine.get_main_loop().root
@@ -170,8 +172,9 @@ func _image_to_base64(img: Image) -> String:
 	return base64
 
 
-func _get_cached_screenshot() -> String:
-	"""Return the most recent screenshot from disk if available"""
+func _get_cached_screenshot(kind_prefix: String = "") -> String:
+	"""Return the most recent screenshot of the given kind from disk if available"""
+
 	var dir = DirAccess.open(screenshot_dir)
 	if not dir:
 		return ""
@@ -181,7 +184,10 @@ func _get_cached_screenshot() -> String:
 	var file_name = dir.get_next()
 	
 	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".png"):
+		if not dir.current_is_dir() and (
+			file_name.ends_with(".png")
+			and (kind_prefix.is_empty() or file_name.begins_with(kind_prefix))
+		):
 			files.append(file_name)
 		file_name = dir.get_next()
 	

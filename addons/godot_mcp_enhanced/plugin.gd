@@ -302,7 +302,9 @@ func _handle_create_scene(params: Dictionary) -> Dictionary:
 
 func _handle_open_scene(params: Dictionary) -> Dictionary:
 	var scene_path = params.get("scene_path", "")
-	var result = scene_operations.open_scene(scene_path)
+	# open_scene is a coroutine (it awaits a frame to verify the scene opened);
+	# awaiting it here is what lets the HTTP layer receive the real response.
+	var result = await scene_operations.open_scene(scene_path)
 	return result
 
 
